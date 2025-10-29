@@ -1,0 +1,299 @@
+{
+  "color": {
+    "palette": {
+      "deepSpaceBlack": {
+        "value": "#080A0F"
+      },
+      "stardustWhite": {
+        "value": "#C5C8D1"
+      },
+      "plasmaBlue": {
+        "value": "#00F0FF"
+      },
+      "warningOrange": {
+        "value": "#FF4A00"
+      },
+      "phantomGray": {
+        "value": "#4A5568"
+      },
+      "riftViolet": {
+        "value": "#3A1C5F"
+      },
+      "zeroCyan": {
+        "value": "#03DAC5"
+      }
+    },
+    "alpha": {
+      "glassLow": {
+        "value": "rgba(8, 10, 15, 0.35)"
+      },
+      "glassMedium": {
+        "value": "rgba(8, 10, 15, 0.55)"
+      },
+      "glassHigh": {
+        "value": "rgba(8, 10, 15, 0.75)"
+      },
+      "outlineSoft": {
+        "value": "rgba(197, 200, 209, 0.32)"
+      },
+      "glowBase": {
+        "value": "rgba(0, 240, 255, 0.66)"
+      }
+    },
+    "gradients": {
+      "primaryVeil": {
+        "value": "#3A1C5F, #03DAC5"
+      }
+    }
+  },
+  "typography": {
+    "families": {
+      "heading": {
+        "value": "'Monument Extended', 'Neue Machina', 'Inter', 'Helvetica Neue', Arial, sans-serif"
+      },
+      "body": {
+        "value": "'Inter', 'Söhne', 'Helvetica Neue', Arial, sans-serif"
+      },
+      "mono": {
+        "value": "'Fira Code', 'JetBrains Mono', 'SFMono-Regular', 'Menlo', 'Consolas', monospace"
+      }
+    },
+    "weights": {
+      "heading": {
+        "value": 900
+      },
+      "bodyRegular": {
+        "value": 400
+      },
+      "bodyMedium": {
+        "value": 500
+      },
+      "mono": {
+        "value": 450
+      }
+    },
+    "sizes": {
+      "display": {
+        "value": "96px"
+      },
+      "h1": {
+        "value": "72px"
+      },
+      "h2": {
+        "value": "48px"
+      },
+      "h3": {
+        "value": "30px"
+      },
+      "body": {
+        "value": "18px"
+      },
+      "caption": {
+        "value": "14px"
+      }
+    },
+    "lineHeights": {
+      "display": {
+        "value": 1.05
+      },
+      "h1": {
+        "value": 1.1
+      },
+      "h2": {
+        "value": 1.2
+      },
+      "h3": {
+        "value": 1.35
+      },
+      "body": {
+        "value": 1.7
+      },
+      "caption": {
+        "value": 1.5
+      }
+    },
+    "letterSpacing": {
+      "display": {
+        "value": "-0.04em"
+      },
+      "h1": {
+        "value": "-0.032em"
+      },
+      "h2": {
+        "value": "-0.024em"
+      },
+      "h3": {
+        "value": "-0.012em"
+      },
+      "body": {
+        "value": "0em"
+      },
+      "caption": {
+        "value": "0.02em"
+      }
+    }
+  },
+  "space": {
+    "scale": {
+      "0": {
+        "value": "0px"
+      },
+      "1": {
+        "value": "8px"
+      },
+      "2": {
+        "value": "16px"
+      },
+      "3": {
+        "value": "24px"
+      },
+      "4": {
+        "value": "40px"
+      },
+      "5": {
+        "value": "64px"
+      },
+      "6": {
+        "value": "96px"
+      }
+    }
+  },
+  "radius": {
+    "none": {
+      "value": "0px"
+    },
+    "xs": {
+      "value": "4px"
+    },
+    "sm": {
+      "value": "8px"
+    },
+    "md": {
+      "value": "12px"
+    },
+    "lg": {
+      "value": "18px"
+    },
+    "xl": {
+      "value": "24px"
+    },
+    "pill": {
+      "value": "999px"
+    }
+  },
+  "shadow": {
+    "subtle": {
+      "value": "0 12px 24px rgba(8, 10, 15, 0.35)"
+    },
+    "medium": {
+      "value": "0 24px 48px rgba(8, 10, 15, 0.5)"
+    },
+    "intense": {
+      "value": "0 48px 80px rgba(8, 10, 15, 0.65)"
+    }
+  },
+  "glow": {
+    "xs": {
+      "value": "0 0 8px #00F0FF"
+    },
+    "sm": {
+      "value": "0 0 12px #00F0FF"
+    },
+    "md": {
+      "value": "0 0 18px #00F0FF"
+    },
+    "lg": {
+      "value": "0 0 24px #00F0FF"
+    }
+  },
+  "motion": {
+    "durations": {
+      "instant": {
+        "value": "80ms"
+      },
+      "quick": {
+        "value": "120ms"
+      },
+      "rapid": {
+        "value": "240ms"
+      },
+      "base": {
+        "value": "350ms"
+      },
+      "cinematic": {
+        "value": "500ms"
+      },
+      "slow": {
+        "value": "1200ms"
+      }
+    },
+    "easings": {
+      "logo": {
+        "value": "cubic-bezier(0.45, 0, 0.55, 1)"
+      },
+      "hud": {
+        "value": "cubic-bezier(0.25, 0.8, 0.25, 1)"
+      },
+      "hoverCard": {
+        "value": "cubic-bezier(0.22, 0.61, 0.36, 1)"
+      },
+      "lightbox": {
+        "value": "cubic-bezier(0.4, 0, 0.2, 1)"
+      },
+      "glitch": {
+        "value": "steps(2, end)"
+      }
+    }
+  },
+  "layer": {
+    "base": {
+      "value": 0
+    },
+    "content": {
+      "value": 10
+    },
+    "foreground": {
+      "value": 20
+    },
+    "hud": {
+      "value": 40
+    },
+    "overlay": {
+      "value": 60
+    },
+    "modal": {
+      "value": 80
+    },
+    "dialog": {
+      "value": 90
+    },
+    "system": {
+      "value": 100
+    }
+  },
+  "noise": {
+    "base": {
+      "value": 0.02
+    },
+    "hover": {
+      "value": 0.035
+    },
+    "overlay": {
+      "value": 0.05
+    }
+  },
+  "blur": {
+    "none": {
+      "value": "0px"
+    },
+    "hud": {
+      "value": "12px"
+    },
+    "overlay": {
+      "value": "18px"
+    },
+    "depth": {
+      "value": "24px"
+    }
+  }
+}
