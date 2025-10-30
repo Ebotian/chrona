@@ -14,6 +14,28 @@ const eslintConfig = defineConfig([
     'next-env.d.ts',
   ]),
   {
+    rules: {
+      'react/no-unknown-property': [
+        'error',
+        {
+          ignore: [
+            'attach',
+            'args',
+            'rotation',
+            'sizeAttenuation',
+            'vertexColors',
+            'blending',
+            'depthWrite',
+            'transparent',
+            'intensity',
+            'opacity',
+            'toneMapped',
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ['src/components/home/Preloader.tsx'],
     rules: {
       'react/no-unknown-property': 'off',
