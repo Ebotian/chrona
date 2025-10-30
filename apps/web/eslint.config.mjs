@@ -13,6 +13,12 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
+  {
+    files: ["src/components/home/Preloader.tsx"],
+    rules: {
+      "react/no-unknown-property": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;

@@ -62,4 +62,10 @@ export default tseslint.config(
     files: ['**/*.{js,jsx}'],
     extends: [tseslint.configs.disableTypeChecked],
   },
+  {
+    files: ['apps/web/src/components/home/Preloader.tsx'],
+    rules: {
+      'react/no-unknown-property': 'off',
+    },
+  },
 );

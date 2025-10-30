@@ -3,6 +3,8 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
+      "@chrono/motion": ["../../packages/motion/src/index.ts"],
+      "@chrono/motion/*": ["../../packages/motion/src/*"],
       "@ui/*": ["../../packages/ui/src/*"],
       "@motion/*": ["../../packages/motion/src/*"],
       "@tokens/*": ["../../packages/tokens/src/*"]
