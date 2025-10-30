@@ -9,6 +9,7 @@
     "lint": "pnpm turbo run lint",
     "test": "pnpm turbo run test",
     "story": "pnpm turbo run storybook",
+    "playground:dev": "pnpm --filter @chrono/motion-playground dev",
     "prepare": "husky"
   },
   "keywords": [],

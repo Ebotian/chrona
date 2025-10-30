@@ -1,9 +1,21 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "pipeline": {
-    "lint": { "outputs": [] },
-    "test": { "outputs": [] },
-    "build": { "dependsOn": ["^build"] },
-    "storybook": { "dependsOn": ["^storybook"] }
+  "tasks": {
+    "lint": {
+      "outputs": []
+    },
+    "test": {
+      "outputs": []
+    },
+    "build": {
+      "dependsOn": [
+        "^build"
+      ]
+    },
+    "storybook": {
+      "dependsOn": [
+        "^storybook"
+      ]
+    }
   }
 }
