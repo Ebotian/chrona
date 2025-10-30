@@ -9,7 +9,7 @@
     // See also https://aka.ms/tsconfig/module
     "module": "nodenext",
     "target": "esnext",
-    "types": [],
+    "types": ["react", "react-dom"],
     // For nodejs:
     // "lib": ["esnext"],
     // "types": ["node"],
@@ -40,5 +40,15 @@
     "noUncheckedSideEffectImports": true,
     "moduleDetection": "force",
     "skipLibCheck": true,
-  }
+    "baseUrl": ".",
+    "paths": {
+      "@chrono/tokens": ["packages/tokens/src/index.ts"],
+      "@chrono/tokens/*": ["packages/tokens/src/*"],
+      "@chrono/ui": ["packages/ui/src/index.ts"],
+      "@chrono/ui/*": ["packages/ui/src/*"],
+      "@chrono/motion": ["packages/motion/src/index.ts"],
+      "@chrono/motion/*": ["packages/motion/src/*"]
+    }
+  },
+  "include": ["apps", "packages", "实现方案.md", "新构想.md"]
 }
