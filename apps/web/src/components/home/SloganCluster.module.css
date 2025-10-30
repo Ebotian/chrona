@@ -1,0 +1,107 @@
+.root {
+  position: relative;
+  display: grid;
+  gap: 2.4rem;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 6rem 0 4rem;
+  color: #d7e7ff;
+  z-index: 3;
+}
+
+.headingGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 1.4rem;
+}
+
+.title {
+  font-size: clamp(3.5rem, 9vw, 5.75rem);
+  font-family: 'Monument Extended', 'Orbitron', sans-serif;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+.titleWord {
+  display: inline-block;
+  margin-right: 0.25em;
+  transform-origin: left center;
+  background: linear-gradient(120deg, rgba(0, 240, 255, 0.92), rgba(173, 103, 255, 0.65));
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-size: 220% auto;
+  transition: filter 0.4s ease;
+}
+
+.titleWord::after {
+  content: attr(data-index);
+  position: absolute;
+  transform: translate(-50%, -200%);
+  font-size: 0.65rem;
+  letter-spacing: 0.32em;
+  opacity: calc(var(--progress, 0));
+  color: rgba(0, 240, 255, 0.4);
+}
+
+.titleWord {
+  opacity: calc(0.25 + var(--progress, 0) * 0.75);
+  transform: scale(calc(0.8 + var(--progress, 0) * 0.2));
+  filter: blur(calc((1 - var(--progress, 0)) * 6px));
+  background-position: calc(20% + var(--progress, 0) * 60%) 50%;
+}
+
+.subtitle {
+  font-size: clamp(1.05rem, 2.5vw, 1.4rem);
+  line-height: 1.6;
+  max-width: 640px;
+  color: rgba(208, 228, 255, 0.78);
+}
+
+.cta {
+  align-self: flex-start;
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 1rem 1.4rem;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 240, 255, 0.35);
+  background: rgba(8, 10, 15, 0.6);
+  color: #e6faff;
+  text-decoration: none;
+  font-size: 1rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.16);
+  transition:
+    box-shadow 0.3s ease,
+    transform 0.3s ease;
+  pointer-events: auto;
+}
+
+.cta:hover {
+  box-shadow: 0 0 28px rgba(0, 240, 255, 0.4);
+}
+
+.ctaLabel {
+  font-weight: 600;
+}
+
+.ctaHint {
+  font-size: 0.75rem;
+  letter-spacing: 0.24em;
+  color: rgba(170, 216, 255, 0.6);
+}
+
+@media (max-width: 768px) {
+  .root {
+    padding: 4rem 0;
+    gap: 2rem;
+  }
+
+  .cta {
+    align-self: center;
+  }
+}

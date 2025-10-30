@@ -6,8 +6,8 @@ import gsap from 'gsap';
 export type HomeTimelinePhase = 'idle' | 'drawing' | 'signal' | 'dock' | 'complete';
 
 export interface UseHomeTimelineOptions {
-  onComplete?: () => void;
-  prefersReducedMotion?: boolean;
+  onComplete?: (() => void) | undefined;
+  prefersReducedMotion?: boolean | undefined;
 }
 
 export interface HomeTimelineState {

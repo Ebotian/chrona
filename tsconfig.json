@@ -7,7 +7,7 @@
 
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
-    "module": "nodenext",
+  "module": "esnext",
     "target": "esnext",
     "types": ["react", "react-dom"],
     // For nodejs:
@@ -38,7 +38,8 @@
     "verbatimModuleSyntax": true,
     "isolatedModules": true,
     "noUncheckedSideEffectImports": true,
-    "moduleDetection": "force",
+  "moduleDetection": "force",
+  "moduleResolution": "bundler",
     "skipLibCheck": true,
     "baseUrl": ".",
     "paths": {

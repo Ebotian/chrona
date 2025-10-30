@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useScrollSnapshot } from '../context/ScrollContext.js';
+import { useScrollSnapshot } from '../context/ScrollContext';
 
 export interface ChronoScrollContextOptions {
   /**

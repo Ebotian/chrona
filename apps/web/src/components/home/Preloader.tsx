@@ -5,7 +5,7 @@ import { Canvas } from '@react-three/fiber';
 import type { Group, Mesh, RingGeometry } from 'three';
 import styles from './Preloader.module.css';
 import { useReducedMotion } from '@chrono/motion';
-import { useHomeTimeline } from './useHomeTimeline.js';
+import { useHomeTimeline } from './useHomeTimeline';
 
 export interface PreloaderProps {
   onComplete?: () => void;
