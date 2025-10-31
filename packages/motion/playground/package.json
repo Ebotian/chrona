@@ -9,7 +9,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@chrono/line-net": "workspace:*",
     "@chrono/motion": "workspace:*",
+    "@chrono/tokens": "workspace:*",
     "@react-three/drei": "^9.114.2",
     "@react-three/fiber": "^9.4.0",
     "leva": "^0.10.0",
