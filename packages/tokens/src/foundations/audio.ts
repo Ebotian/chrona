@@ -9,6 +9,6 @@ export const audioBeats = {
 } as const;
 
 export const audioTiming = {
-  beatMs: (bpm = audioBeats.defaultBpm) => 60000 / bpm,
-  measureMs: (bars = 4, bpm = audioBeats.defaultBpm) => (60000 / bpm) * 4 * bars,
+  beatMs: (bpm: number = audioBeats.defaultBpm) => 60000 / bpm,
+  measureMs: (bars: number = 4, bpm: number = audioBeats.defaultBpm) => (60000 / bpm) * 4 * bars,
 } as const;

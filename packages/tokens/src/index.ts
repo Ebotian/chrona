@@ -25,12 +25,15 @@ import {
   typographyWeights,
 } from './foundations/index.js';
 import {
+  semanticAudio,
   semanticColors,
   semanticEffects,
   semanticLayers,
+  semanticLines,
   semanticMotion,
   semanticSpacing,
   semanticTypography,
+  semanticAngles,
 } from './semantic.js';
 
 export * from './foundations/index.js';
@@ -80,6 +83,9 @@ export const chronoTokens = {
     typography: semanticTypography,
     spacing: semanticSpacing,
     motion: semanticMotion,
+    lines: semanticLines,
+    angles: semanticAngles,
+    audio: semanticAudio,
     effects: semanticEffects,
     layers: semanticLayers,
   },

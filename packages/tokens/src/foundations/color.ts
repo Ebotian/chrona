@@ -2,6 +2,7 @@ export const colorPalette = {
   deepSpaceBlack: '#080A0F',
   stardustWhite: '#C5C8D1',
   plasmaBlue: '#00F0FF',
+  magRidgePink: '#ff2d92',
   warningOrange: '#FF4A00',
   phantomGray: '#4A5568',
   riftViolet: '#3A1C5F',
