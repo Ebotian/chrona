@@ -12,3 +12,7 @@ export type {
 } from './types';
 
 export { defineLineNet, LineNetDefinitionError, type DefineLineNetOptions } from './definition';
+export {
+  createChronoInitiationGridDefinition,
+  chronoInitiationGridDefinition,
+} from './presets/chronoInitiationGrid';

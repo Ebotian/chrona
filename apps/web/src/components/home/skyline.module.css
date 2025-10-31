@@ -1,0 +1,27 @@
+.container {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% - var(--horizon-y));
+  height: 28vh;
+  overflow: hidden;
+  /* Clip anything outside the skyline area */
+  pointer-events: none;
+  z-index: 2;
+  /* Ensure skyline renders above ground grid near horizon */
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  /* No filters to avoid blur and width variance */
+}
+
+/* Keep strokes crisp and uniform */
+.layer path,
+.layer line {
+  vector-effect: non-scaling-stroke;
+  shape-rendering: crispEdges;
+}

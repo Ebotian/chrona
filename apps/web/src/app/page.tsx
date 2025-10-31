@@ -1,10 +1,5 @@
-import HomeImmersionLayer from '../components/home/HomeImmersionLayer';
-import styles from './page.module.css';
+import { IntroScene } from '../components/home';
 
-export default function Home() {
-  return (
-    <main className={styles.root}>
-      <HomeImmersionLayer />
-    </main>
-  );
+export default function Page() {
+  return <IntroScene />;
 }

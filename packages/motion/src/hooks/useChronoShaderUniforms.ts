@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, useMemo, useRef } from 'react';
 import { Color, Uniform, Vector2, Vector3, Vector4 } from 'three';
 

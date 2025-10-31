@@ -21,7 +21,7 @@ import {
   typographyLineHeights,
   typographySizes,
   typographyWeights,
-} from './foundations/index.js';
+} from './foundations';
 
 export const semanticColors = {
   background: {

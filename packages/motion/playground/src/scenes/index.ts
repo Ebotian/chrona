@@ -3,6 +3,7 @@ import { NebulaParticlesScene } from './NebulaParticlesScene.js';
 import { HudGridScene } from './HudGridScene.js';
 import { SynthwaveSkylineScene } from './SynthwaveSkylineScene.js';
 import { LineNetDebugScene } from './LineNetDebugScene.js';
+import { ChronoInitiationGridScene } from './ChronoInitiationGridScene.js';
 
 export interface PlaygroundSceneMeta {
   label: string;
@@ -25,6 +26,12 @@ export const demoScenes: Record<string, PlaygroundSceneMeta> = {
     label: 'Synthwave Skyline',
     description: '使用零面积线条和霓虹材质构建的霓虹城市天际线，滚动驱动视差与日冕脉冲。',
     render: () => createElement(SynthwaveSkylineScene),
+  },
+  initiation: {
+    label: 'Chrono Initiation Grid',
+    description:
+      '预载入线网动画：Chrono Glyph 点亮、主线延展与 Halo 节点唤醒，验证 DSL 时间轴与 Reduced Motion 行为。',
+    render: () => createElement(ChronoInitiationGridScene),
   },
   lineNet: {
     label: 'Line-Net Debug',

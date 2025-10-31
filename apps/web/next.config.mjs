@@ -4,6 +4,7 @@ const withVanillaExtract = createVanillaExtractPlugin();
 
 const nextConfig = {
   typedRoutes: true,
+  transpilePackages: ['@chrono/ui', '@chrono/tokens', '@chrono/motion'],
   turbopack: {},
   images: {
     remotePatterns: [{ protocol: 'https', hostname: '**' }],

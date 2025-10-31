@@ -15,3 +15,8 @@ export type {
   ChronoShaderUniformDefinition,
   ChronoShaderUniformValue,
 } from './hooks/useChronoShaderUniforms';
+export {
+  useChronoAudioTransport,
+  type ChronoAudioTransport,
+  type ChronoAudioTransportOptions,
+} from './hooks/useChronoAudioTransport';

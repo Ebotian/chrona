@@ -23,7 +23,7 @@ import {
   typographyLineHeights,
   typographySizes,
   typographyWeights,
-} from './foundations/index.js';
+} from './foundations';
 import {
   semanticAudio,
   semanticColors,
@@ -34,10 +34,10 @@ import {
   semanticSpacing,
   semanticTypography,
   semanticAngles,
-} from './semantic.js';
+} from './semantic';
 
-export * from './foundations/index.js';
-export * from './semantic.js';
+export * from './foundations';
+export * from './semantic';
 
 export const chronoTokens = {
   foundations: {

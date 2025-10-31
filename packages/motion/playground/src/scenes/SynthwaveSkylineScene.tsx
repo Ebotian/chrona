@@ -2,10 +2,15 @@
 import { useControls } from 'leva';
 import { useFrame } from '@react-three/fiber';
 import { useMemo, useRef } from 'react';
-import { Color, Group, Vector3 } from 'three';
+import { Color, Group, MathUtils, Vector3 } from 'three';
 import { Line } from '@react-three/drei';
 import { chronoTokens } from '@chrono/tokens';
-import { useChronoScene, useChronoScrollContext, useReducedMotion } from '@chrono/motion';
+import {
+  useChronoAudioTransport,
+  useChronoScene,
+  useChronoScrollContext,
+  useReducedMotion,
+} from '@chrono/motion';
 
 // --- Constants and Tokens ---
 const { foundations } = chronoTokens;
@@ -31,6 +36,8 @@ type SkylineControls = {
   sunRadius: number;
   parallax: number;
   animSpeed: number;
+  bpm: number;
+  loopBeats: number;
 };
 
 type SkylineLayerConfig = Pick<
@@ -44,6 +51,7 @@ export function SynthwaveSkylineScene() {
   const reducedMotion = useReducedMotion();
   const scroll = useChronoScrollContext({ smoothing: 0.08 });
   const groupRef = useRef<Group>(null);
+  const skylineStateRef = useRef<SkylineState>(createSkylineState());
 
   const controls = useControls('Synthwave Skyline', {
     horizonY: { value: -2, min: -5, max: 0, step: 0.1 },
@@ -56,8 +64,18 @@ export function SynthwaveSkylineScene() {
     complexity: { value: 0.6, min: 0.1, max: 1, step: 0.05 },
     sunRadius: { value: 3, min: 1, max: 8, step: 0.1 },
     parallax: { value: 1.2, min: 0, max: 4, step: 0.1 },
+    bpm: { value: 96, min: 60, max: 160, step: 1 },
+    loopBeats: { value: 16, min: 4, max: 64, step: 1 },
     animSpeed: { value: 0.1, min: 0.01, max: 0.5, step: 0.01 },
   }) as unknown as SkylineControls;
+
+  const transport = useChronoAudioTransport({
+    bpm: controls.bpm,
+    loopBeats: controls.loopBeats,
+    autoplay: !reducedMotion,
+    audioUrl: 'https://cdn.seffola.net/audio/lost-years-converter-v1.mp3',
+    volume: 0.42,
+  });
 
   const {
     horizonY,
@@ -70,6 +88,8 @@ export function SynthwaveSkylineScene() {
     complexity,
     sunRadius,
     parallax,
+    bpm,
+    loopBeats,
     animSpeed,
   } = controls;
 
@@ -86,11 +106,49 @@ export function SynthwaveSkylineScene() {
     [skylineLayers, layerSeparation, baseHeight, heightVariance, complexity, horizonY],
   );
 
+  const redrawProfile = useMemo(
+    () => createLayerRedrawProfile({ skylineLayers, loopBeats }),
+    [skylineLayers, loopBeats],
+  );
+
   useFrame((_, delta) => {
     if (!groupRef.current) return;
+
     const targetOffset = -(scroll.easedProgress - 0.5) * parallax;
-    const lerpFactor = reducedMotion ? 1 : Math.min(1, delta * (1 / Math.max(animSpeed, 0.01) + 2));
-    groupRef.current.position.x += (targetOffset - groupRef.current.position.x) * lerpFactor;
+    const lerpFactor = reducedMotion ? 12 : Math.max(4, 12 * animSpeed * 4);
+    groupRef.current.position.x = MathUtils.damp(
+      groupRef.current.position.x,
+      targetOffset,
+      lerpFactor,
+      delta,
+    );
+
+    const loopProgress = transport.loopProgressRef.current;
+    const beat = transport.beatRef.current;
+    const skylineState = skylineStateRef.current;
+    const baseOpacities = skylineLayersData.map((layer) =>
+      layerOpacity(layer.depth, skylineLayers, layerSeparation),
+    );
+
+    updateRedrawState({
+      state: skylineState,
+      loopProgress,
+      redrawProfile,
+      reducedMotion,
+      delta,
+      baseOpacities,
+    });
+
+    skylineState.layers.forEach((layerState, index) => {
+      const layer = skylineLayersData[index];
+      if (!layer) return;
+
+      const parallaxStrength = reducedMotion ? 0 : 0.22 * (index + 1);
+      const swayX = Math.sin(beat * 0.12 + index * 0.6) * parallaxStrength;
+      const swayY = Math.cos(beat * 0.1 + index * 1.2) * parallaxStrength * 0.4;
+      layerState.parallaxX = MathUtils.damp(layerState.parallaxX, swayX, 6, delta);
+      layerState.parallaxY = MathUtils.damp(layerState.parallaxY, swayY, 6, delta);
+    });
   });
 
   return (
@@ -99,17 +157,25 @@ export function SynthwaveSkylineScene() {
       <Sun radius={sunRadius} y={horizonY + 2.2} depth={-skylineLayers * layerSeparation} />
 
       {/* Skyline Layers */}
-      {skylineLayersData.map((layer) => (
-        <group key={`layer-${layer.depth}`} position-z={-layer.depth}>
-          <Line
-            points={layer.points}
-            color={layer.color}
-            linewidth={layer.linewidth}
-            transparent
-            opacity={layerOpacity(layer.depth, skylineLayers, layerSeparation)}
-          />
-        </group>
-      ))}
+      {skylineLayersData.map((layer, index) => {
+        const state = skylineStateRef.current.layers[index];
+        const opacity = state
+          ? state.opacity
+          : layerOpacity(layer.depth, skylineLayers, layerSeparation);
+        const offsetX = state?.parallaxX ?? 0;
+        const offsetY = state?.parallaxY ?? 0;
+        return (
+          <group key={`layer-${layer.depth}`} position={[offsetX, offsetY, -layer.depth]}>
+            <Line
+              points={layer.points}
+              color={layer.color}
+              linewidth={layer.linewidth}
+              transparent
+              opacity={opacity}
+            />
+          </group>
+        );
+      })}
 
       {/* Ground Grid */}
       <GroundGrid divisions={gridDivisions} horizonY={horizonY} fade={gridFade} />
@@ -278,4 +344,89 @@ function layerOpacity(depth: number, totalLayers: number, separation: number) {
   const index = depth / separation;
   const base = 1 - index / (totalLayers - 0.2);
   return Math.min(1, Math.max(0.25, base));
+}
+
+type SkylineLayerState = {
+  opacity: number;
+  parallaxX: number;
+  parallaxY: number;
+};
+
+type SkylineState = {
+  layers: SkylineLayerState[];
+};
+
+type RedrawProfile = {
+  layerOffsets: number[];
+  redrawWindow: number;
+};
+
+function createSkylineState(): SkylineState {
+  return { layers: [] };
+}
+
+function ensureLayerState(state: SkylineState, layerCount: number) {
+  if (state.layers.length < layerCount) {
+    const missing = layerCount - state.layers.length;
+    for (let i = 0; i < missing; i += 1) {
+      state.layers.push({ opacity: 1, parallaxX: 0, parallaxY: 0 });
+    }
+  } else if (state.layers.length > layerCount) {
+    state.layers.length = layerCount;
+  }
+}
+
+function createLayerRedrawProfile({
+  skylineLayers,
+  loopBeats,
+}: {
+  skylineLayers: number;
+  loopBeats: number;
+}): RedrawProfile {
+  const totalLayers = Math.max(1, skylineLayers);
+  const offsetStep = 1 / totalLayers;
+  const layerOffsets = Array.from({ length: totalLayers }, (_, index) => index * offsetStep);
+  const redrawWindow = Math.min(0.4, 4 / Math.max(4, loopBeats));
+  return { layerOffsets, redrawWindow };
+}
+
+function updateRedrawState({
+  state,
+  loopProgress,
+  redrawProfile,
+  reducedMotion,
+  delta,
+  baseOpacities,
+}: {
+  state: SkylineState;
+  loopProgress: number;
+  redrawProfile: RedrawProfile;
+  reducedMotion: boolean;
+  delta: number;
+  baseOpacities: number[];
+}) {
+  const { layerOffsets, redrawWindow } = redrawProfile;
+  ensureLayerState(state, layerOffsets.length);
+
+  const speed = reducedMotion ? 0 : Math.min(1, delta * 12);
+
+  state.layers.forEach((layer, index) => {
+    const offset = layerOffsets[index] ?? 0;
+    const baseOpacity = baseOpacities[index] ?? 1;
+    const phase = (((loopProgress - offset) % 1) + 1) % 1;
+
+    let intensity = 1;
+    if (!reducedMotion && redrawWindow > 0) {
+      if (phase < redrawWindow) {
+        const local = phase / redrawWindow;
+        intensity = Math.pow(local, 0.45);
+      } else if (phase > 1 - redrawWindow * 0.6) {
+        const local = (phase - (1 - redrawWindow * 0.6)) / (redrawWindow * 0.6);
+        intensity = Math.pow(1 - local, 0.6);
+      }
+    }
+
+    const targetOpacity = Math.max(0.1, baseOpacity * intensity);
+    layer.opacity = MathUtils.damp(layer.opacity, targetOpacity, 4 + speed * 6, delta);
+  });
 }

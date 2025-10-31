@@ -1,4 +1,4 @@
-import { colorPalette } from './color.js';
+import { colorPalette } from './color';
 
 export const shadowLayers = {
   subtle: `0 12px 24px rgba(8, 10, 15, 0.35)`,

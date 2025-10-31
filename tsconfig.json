@@ -48,7 +48,9 @@
       "@chrono/ui": ["packages/ui/src/index.ts"],
       "@chrono/ui/*": ["packages/ui/src/*"],
       "@chrono/motion": ["packages/motion/src/index.ts"],
-      "@chrono/motion/*": ["packages/motion/src/*"]
+      "@chrono/motion/*": ["packages/motion/src/*"],
+      "@chrono/line-net": ["packages/line-net/src/index.ts"],
+      "@chrono/line-net/*": ["packages/line-net/src/*"]
     }
   },
   "include": ["apps", "packages", "实现方案.md", "新构想.md"]
