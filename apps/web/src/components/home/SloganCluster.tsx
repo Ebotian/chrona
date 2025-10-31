@@ -1,6 +1,7 @@
 'use client';
 
-import { memo, useMemo } from 'react';
+import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import styles from './SloganCluster.module.css';
 
@@ -34,13 +35,49 @@ export const SloganCluster = memo(function SloganCluster({
   className,
   reveal,
 }: SloganClusterProps) {
+  const [pointer, setPointer] = useState({ x: 50, y: 50 });
+  const [pointerActive, setPointerActive] = useState(false);
+
+  const handlePointerMove = useCallback((event: ReactPointerEvent<HTMLElement>) => {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const x = bounds.width ? ((event.clientX - bounds.left) / bounds.width) * 100 : 50;
+    const y = bounds.height ? ((event.clientY - bounds.top) / bounds.height) * 100 : 50;
+
+    setPointer({
+      x: Math.min(100, Math.max(0, x)),
+      y: Math.min(100, Math.max(0, y)),
+    });
+    setPointerActive(true);
+  }, []);
+
+  const handlePointerLeave = useCallback(() => {
+    setPointer({ x: 50, y: 50 });
+    setPointerActive(false);
+  }, []);
+
   const rootClassName = useMemo(
     () => [styles.root, className].filter(Boolean).join(' '),
     [className],
   );
 
+  const interactiveStyle = useMemo(
+    () =>
+      ({
+        '--pointer-x': `${pointer.x}%`,
+        '--pointer-y': `${pointer.y}%`,
+        '--pointer-active': pointerActive ? 1 : 0,
+      }) as CSSProperties,
+    [pointer.x, pointer.y, pointerActive],
+  );
+
   return (
-    <section className={rootClassName} aria-labelledby="chrono-slogan-title">
+    <section
+      className={rootClassName}
+      aria-labelledby="chrono-slogan-title"
+      onPointerMove={handlePointerMove}
+      onPointerLeave={handlePointerLeave}
+      style={interactiveStyle}
+    >
       <div className={styles.headingGroup}>
         <h1 id="chrono-slogan-title" className={styles.title}>
           {titleLines.map((word, index) => (
@@ -68,8 +105,11 @@ export const SloganCluster = memo(function SloganCluster({
         }}
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
+        data-active={reveal > 0.75}
       >
-        <span className={styles.ctaLabel}>{CTA_LABEL}</span>
+        <span className={styles.ctaLabel} data-text={CTA_LABEL}>
+          {CTA_LABEL}
+        </span>
         <span className={styles.ctaHint}>Primary Access Node</span>
       </motion.a>
     </section>
