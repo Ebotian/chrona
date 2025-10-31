@@ -1,10 +1,17 @@
 import {
+  anglePresets,
+  angleTolerance,
+  audioBeats,
+  audioTiming,
   blurLevels,
   colorAlpha,
   colorGradients,
   colorPalette,
   glowRadii,
   layerIndex,
+  lineGap,
+  lineWeights,
+  lineWidths,
   motionDurations,
   motionEasings,
   noiseLevels,
@@ -121,6 +128,41 @@ export const semanticMotion = {
   },
 } as const;
 
+export const semanticLines = {
+  tracer: {
+    width: lineWidths.hair,
+    weight: lineWeights.tertiary,
+  },
+  grid: {
+    width: lineWidths.base,
+    weight: lineWeights.secondary,
+    gap: lineGap.normal,
+  },
+  horizon: {
+    width: lineWidths.heavy,
+    weight: lineWeights.primary,
+    accentGap: lineGap.tight,
+  },
+} as const;
+
+export const semanticAngles = {
+  skyline: anglePresets.deg60,
+  ascent: anglePresets.deg30,
+  descent: anglePresets.deg120,
+  tolerance: {
+    precision: angleTolerance.normal,
+    cinematic: angleTolerance.soft,
+    exact: angleTolerance.exact,
+  },
+} as const;
+
+export const semanticAudio = {
+  defaultBpm: audioBeats.defaultBpm,
+  cues: audioBeats.cues,
+  beatMs: audioTiming.beatMs,
+  measureMs: audioTiming.measureMs,
+} as const;
+
 export const semanticEffects = {
   glow: {
     idle: glowRadii.xs,
@@ -153,5 +195,8 @@ export type SemanticColors = typeof semanticColors;
 export type SemanticTypography = typeof semanticTypography;
 export type SemanticSpacing = typeof semanticSpacing;
 export type SemanticMotion = typeof semanticMotion;
+export type SemanticLines = typeof semanticLines;
+export type SemanticAngles = typeof semanticAngles;
+export type SemanticAudio = typeof semanticAudio;
 export type SemanticEffects = typeof semanticEffects;
 export type SemanticLayers = typeof semanticLayers;
