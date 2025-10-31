@@ -4,6 +4,13 @@ import {
   colorGradients,
   colorPalette,
   glowRadii,
+  lineWidths,
+  lineWeights,
+  lineGap,
+  anglePresets,
+  angleTolerance,
+  audioBeats,
+  audioTiming,
   layerIndex,
   motionDurations,
   motionEasings,
@@ -45,6 +52,15 @@ export const chronoTokens = {
     },
     space: spacingScale,
     radius: radiusScale,
+    line: {
+      widths: lineWidths,
+      weights: lineWeights,
+      gap: lineGap,
+    },
+    angles: {
+      presets: anglePresets,
+      tolerance: angleTolerance,
+    },
     motion: {
       durations: motionDurations,
       easings: motionEasings,
@@ -53,6 +69,10 @@ export const chronoTokens = {
     glow: glowRadii,
     layers: layerIndex,
     noise: noiseLevels,
+    audio: {
+      beats: audioBeats,
+      timing: audioTiming,
+    },
     blur: blurLevels,
   },
   semantic: {

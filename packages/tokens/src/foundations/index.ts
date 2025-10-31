@@ -7,3 +7,6 @@ export * from './motion.js';
 export * from './layer.js';
 export * from './noise.js';
 export * from './blur.js';
+export * from './line.js';
+export * from './angles.js';
+export * from './audio.js';
