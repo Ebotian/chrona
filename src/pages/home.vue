@@ -64,7 +64,7 @@ import MiniPlayer from '../components/home/MiniPlayer.vue'
 .center {
   display: flex;
   height: 100%;
-  flex: 20 1 0;
+  flex: 30 1 0;
 }
 
 
@@ -96,7 +96,7 @@ import MiniPlayer from '../components/home/MiniPlayer.vue'
   display: flex;
   flex-direction: column;
   height: 100%;
-  flex: 10 1 0;
+  flex: 15 1 0;
 }
 
 .right>* {
