@@ -1,0 +1,5 @@
+---
+date: 2024-01-31
+---
+
+习 有什么事，任何事都可以在此处写，没事的that's ok. 在这里有几乎无穷的自由，经过网络放大的崇拜苦难不可取，但只要求万事顺心也难做事，事情进行总会遇到困难，只是类型和程度不一，我更需要的是，一个强有力的动机。之前推出universal motivation也是出于对此需求的解决尝试。 class是对Structure的改进，通过fees identifier更好地规范组织了自定义类的结构和适应object-oriented理念 typically class private data (properties) + public functions对函数调用(inside class)的优化使函数指针不再必要。也使class更readable。更方便地访问不同作用域中的函数和explicit scope identifier:"scope resolution operator":""syntax to use: returnType className function() scope so you can define the same name function elsewhere. (different class, same name function makes code much more readable and easy to write as one doesn't need to remember that much of function names in different but similar condition). class: can declare function in it but define them elsewhere. (outside the class we need to add scope identifier before function to define them). (or use them?).
