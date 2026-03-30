@@ -45,12 +45,12 @@ def find_matches(name: str):
 
     patterns = [
         # keep numeric groups as strings to preserve leading zeros
-        (re.compile(r'大学随笔第(\d+)本(\d+)页'), lambda m: ('uni', m.group(1), m.group(2))),
-        (re.compile(r'大学随笔第([一二三四五六七八九十百零]+)本([0-9]+)页'), lambda m: ('uni', str(chinese_to_int(m.group(1))) if chinese_to_int(m.group(1)) is not None else None, m.group(2))),
+        (re.compile(r'大学随笔第(\d+)本[-_–—\s]?(\d+)页'), lambda m: ('uni', m.group(1), m.group(2))),
+        (re.compile(r'大学随笔第([一二三四五六七八九十百零]+)本[-_–—\s]?([0-9]+)页'), lambda m: ('uni', str(chinese_to_int(m.group(1))) if chinese_to_int(m.group(1)) is not None else None, m.group(2))),
         (re.compile(r'高中随笔第(\d+)页'), lambda m: ('high', m.group(1))),
         (re.compile(r'高中随笔第([一二三四五六七八九十百零]+)页'), lambda m: ('high', str(chinese_to_int(m.group(1))) if chinese_to_int(m.group(1)) is not None else None)),
-        (re.compile(r'第(\d+)本(\d+)页'), lambda m: ('uni', m.group(1), m.group(2))),
-        (re.compile(r'第([一二三四五六七八九十百零]+)本([0-9]+)页'), lambda m: ('uni', str(chinese_to_int(m.group(1))) if chinese_to_int(m.group(1)) is not None else None, m.group(2))),
+        (re.compile(r'第(\d+)本[-_–—\s]?(\d+)页'), lambda m: ('uni', m.group(1), m.group(2))),
+        (re.compile(r'第([一二三四五六七八九十百零]+)本[-_–—\s]?([0-9]+)页'), lambda m: ('uni', str(chinese_to_int(m.group(1))) if chinese_to_int(m.group(1)) is not None else None, m.group(2))),
     ]
 
     for regex, handler in patterns:
