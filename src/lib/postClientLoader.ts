@@ -2,6 +2,11 @@ import type { ArticleMeta } from './postParser'
 
 type RawModules = Record<string, string>
 
+export type SearchablePost = ArticleMeta & {
+  body: string
+  searchText: string
+}
+
 function parseFrontmatter(content: string): Record<string, string> {
   const fm: Record<string, string> = {}
   if (!content.startsWith('---')) return fm
@@ -40,6 +45,25 @@ function normalizeDate(date: string): string {
   return `${y.padStart(4, '0')}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`
 }
 
+function stripFrontmatter(content: string): string {
+  if (!content.startsWith('---')) return content
+  const end = content.indexOf('---', 3)
+  if (end === -1) return content
+  return content.slice(end + 3).trim()
+}
+
+function collapseMarkdown(content: string): string {
+  return stripFrontmatter(content)
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/`[^`]*`/g, ' ')
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
+    .replace(/\[[^\]]*\]\([^)]*\)/g, ' ')
+    .replace(/^#+\s*/gm, '')
+    .replace(/[*_~>#-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 export function loadPostsFromClient(): ArticleMeta[] {
   const modules = import.meta.glob('/posts/**/*.md', {
     query: '?raw',
@@ -60,6 +84,41 @@ export function loadPostsFromClient(): ArticleMeta[] {
       date: date ? normalizeDate(date) : undefined,
       slug,
       filePath: filePath.slice(1)
+    })
+  }
+
+  results.sort((a, b) => {
+    if (a.date && b.date) return b.date.localeCompare(a.date)
+    if (a.date) return -1
+    if (b.date) return 1
+    return a.slug.localeCompare(b.slug)
+  })
+  return results
+}
+
+export function loadSearchablePostsFromClient(): SearchablePost[] {
+  const modules = import.meta.glob('/posts/**/*.md', {
+    query: '?raw',
+    import: 'default',
+    eager: true
+  }) as RawModules
+
+  const results: SearchablePost[] = []
+  for (const [filePath, raw] of Object.entries(modules)) {
+    const fm = parseFrontmatter(raw)
+    const rawName = filePath.split('/').pop()?.replace(/\.[^.]+$/, '') ?? filePath
+    const title = rawName.replace(/^[0-9]{4}([-.][0-9]{1,2}){2}[-_]?/, '')
+    const date = fm.date || filenameDate(filePath)
+    const slug = fm.slug || filenameToSlug(filePath)
+    const body = collapseMarkdown(raw)
+    results.push({
+      id: slug,
+      title,
+      date: date ? normalizeDate(date) : undefined,
+      slug,
+      filePath: filePath.slice(1),
+      body,
+      searchText: `${title} ${body}`.toLowerCase()
     })
   }
 

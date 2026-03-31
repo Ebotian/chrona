@@ -114,27 +114,30 @@ if (latestDatedPost?.date) {
   flex-direction: column;
   height: 100%;
   flex: 15 1 0;
+  gap: 0.5rem;
 }
 
 .right>* {
-  flex: 1 1 0;
+  flex: 0 0 auto;
   min-height: 0;
   box-sizing: border-box;
   width: 100%;
 }
 
 .right> :nth-child(1) {
+  flex: 0 0 3.375rem;
+  min-height: 0;
+  display: flex;
+  align-items: flex-start;
+}
+
+.right> :nth-child(2) {
   flex: 1 1 0;
   min-height: 0;
 }
 
-.right> :nth-child(2) {
-  flex: 15 1 0;
-  min-height: 0;
-}
-
 .right> :nth-child(3) {
-  flex: 14 1 0;
+  flex: 1 1 0;
   min-height: 0;
 }
 </style>

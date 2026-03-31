@@ -7,12 +7,7 @@ import { useTimelineSyncState } from '../../lib/timelineSync'
 
 type TimelineEntries = Record<string, ArticleMeta[]>
 type EntriesInput = TimelineEntries | ArticleMeta[]
-
-type VisibleBounds = {
-  start: string
-  end: string
-}
-
+type VisibleBounds = { start: string; end: string }
 type Direction = 'up' | 'down'
 
 type RenderCell = {
@@ -25,7 +20,7 @@ type RenderCell = {
 type RenderRow = {
   key: string
   lineY: number
-  contentY: number
+  topY: number
   contentLeft: number
   contentWidth: number
   opacity: number
@@ -47,29 +42,34 @@ const emit = defineEmits<{
 
 const store = useTimeStore()
 const sync = useTimelineSyncState()
-const DEBUG_SYNC = import.meta.env.DEV && (globalThis as { __TIMELINE_DEBUG__?: boolean }).__TIMELINE_DEBUG__ === true
 const containerRef = ref<HTMLElement | null>(null)
 const regionHeight = ref(0)
 const regionWidth = ref(0)
 const regionLeftGlobal = ref(0)
 const regionTopGlobal = ref(0)
+const monthPickerBottomLocal = ref(0)
+
 const syncedAxisXGlobal = ref<number | null>(null)
 const syncedCenterYGlobal = ref<number | null>(null)
+const syncedMotionIndex = ref<number | null>(null)
 const syncedRowPitch = ref(30)
-const syncedCenterIndexFloat = ref<number | null>(null)
 const syncedVisibleDates = ref<string[]>([])
-const syncedTimelineTopGlobal = ref<number | null>(null)
-const syncedTimelineScrollTop = ref(0)
-const syncedRowCenterOffset = ref(12)
 
 const EDGE_FADE_BAND = 64
-const ROW_SIDE_PADDING = 14
 const LINE_MIN_LEFT = 0
 
 let resizeObserver: ResizeObserver | null = null
+let pickerResizeObserver: ResizeObserver | null = null
 const scrollDirection = ref<Direction>('up')
 const lastCurrentDate = ref(store.currentDate)
-let lastDebugLogAt = 0
+
+function syncFromBus() {
+  syncedAxisXGlobal.value = sync.axisXGlobal.value
+  syncedCenterYGlobal.value = sync.centerYGlobal.value
+  syncedMotionIndex.value = sync.motionIndex.value
+  syncedRowPitch.value = sync.rowPitch.value || 30
+  syncedVisibleDates.value = [...sync.visibleDates.value]
+}
 
 const normalizedEntries = computed<TimelineEntries>(() => {
   if (Array.isArray(props.entries)) {
@@ -78,15 +78,14 @@ const normalizedEntries = computed<TimelineEntries>(() => {
       if (!article.date) continue
       const date = article.date.slice(0, 10)
       if (!byDate[date]) byDate[date] = []
-      if (byDate[date].length < 2) byDate[date].push(article)
+      byDate[date].push(article)
     }
     return byDate
   }
-
   const byDate: TimelineEntries = {}
   for (const [date, rawList] of Object.entries(props.entries)) {
     const list = Array.isArray(rawList) ? rawList : []
-    byDate[date] = list.slice(0, 2)
+    byDate[date] = list
   }
   return byDate
 })
@@ -100,9 +99,7 @@ const activeBounds = computed<VisibleBounds | null>(() => {
 })
 
 const visibleDays = computed<string[]>(() => {
-  if (syncedVisibleDates.value.length > 0) {
-    return syncedVisibleDates.value
-  }
+  if (syncedVisibleDates.value.length > 0) return syncedVisibleDates.value
   const bounds = activeBounds.value
   if (!bounds) {
     const current = parseISO(store.currentDate)
@@ -126,9 +123,9 @@ const currentIndex = computed(() => {
   return idx >= 0 ? idx : Math.floor(visibleDays.value.length / 2)
 })
 
-const anchorIndex = computed(() => {
-  if (typeof syncedCenterIndexFloat.value === 'number' && Number.isFinite(syncedCenterIndexFloat.value)) {
-    return syncedCenterIndexFloat.value
+const motionIndex = computed(() => {
+  if (typeof syncedMotionIndex.value === 'number' && Number.isFinite(syncedMotionIndex.value)) {
+    return syncedMotionIndex.value
   }
   return currentIndex.value
 })
@@ -145,17 +142,6 @@ const centerAnchorY = computed(() => {
 
 const rowPitch = computed(() => syncedRowPitch.value || 30)
 
-function syncFromBus() {
-  syncedAxisXGlobal.value = sync.axisXGlobal.value
-  syncedCenterYGlobal.value = sync.centerYGlobal.value
-  syncedRowPitch.value = sync.rowPitch.value || 30
-  syncedCenterIndexFloat.value = sync.centerIndexFloat.value
-  syncedVisibleDates.value = [...sync.visibleDates.value]
-  syncedTimelineTopGlobal.value = sync.timelineTopGlobal.value
-  syncedTimelineScrollTop.value = sync.timelineScrollTop.value
-  syncedRowCenterOffset.value = sync.rowCenterOffset.value
-}
-
 function measureRegionRect() {
   if (!containerRef.value) return
   const rect = containerRef.value.getBoundingClientRect()
@@ -163,26 +149,34 @@ function measureRegionRect() {
   regionTopGlobal.value = rect.top
 }
 
+function measureMonthPickerBoundary() {
+  const picker = document.querySelector('.tag-col .outside-box') as HTMLElement | null
+  if (!picker) {
+    monthPickerBottomLocal.value = 0
+    return
+  }
+  const rect = picker.getBoundingClientRect()
+  monthPickerBottomLocal.value = Math.max(0, rect.bottom - regionTopGlobal.value)
+}
+
 function clamp(v: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, v))
 }
 
-function calcOpacity(y: number): number {
-  const topDistance = y
-  const bottomDistance = regionHeight.value - y
-
+function calcOpacity(topY: number, bottomY: number): number {
+  const topBoundary = monthPickerBottomLocal.value + 4
+  const topDistance = topY - topBoundary
+  const bottomDistance = regionHeight.value - bottomY
   let topOpacity = 1
   if (topDistance < EDGE_FADE_BAND) {
     const p = clamp(topDistance / EDGE_FADE_BAND, 0, 1)
     topOpacity = scrollDirection.value === 'up' ? p : Math.pow(p, 0.72)
   }
-
   let bottomOpacity = 1
   if (bottomDistance < EDGE_FADE_BAND) {
     const p = clamp(bottomDistance / EDGE_FADE_BAND, 0, 1)
     bottomOpacity = scrollDirection.value === 'down' ? p : Math.pow(p, 0.72)
   }
-
   return clamp(Math.min(topOpacity, bottomOpacity), 0, 1)
 }
 
@@ -201,18 +195,14 @@ const rows = computed<RenderRow[]>(() => {
   const out: RenderRow[] = []
   const lineLeft = Math.min(Math.max(axisAnchorX.value, LINE_MIN_LEFT), regionWidth.value)
   const lineWidth = Math.max(0, regionWidth.value - lineLeft)
-  const contentLeft = lineLeft + ROW_SIDE_PADDING
-  const contentWidth = Math.max(0, lineWidth - ROW_SIDE_PADDING)
+  const contentLeft = lineLeft
+  const contentWidth = lineWidth
 
-  for (const [dayIndexFromViewport, day] of visibleDays.value.entries()) {
+  for (const [dayIndex, day] of visibleDays.value.entries()) {
     const list = normalizedEntries.value[day]
     if (!list || list.length === 0) continue
 
-    const dayIndex = dayIndexFromViewport
-    const lineY = syncedTimelineTopGlobal.value == null
-      ? centerAnchorY.value + (dayIndex - anchorIndex.value) * rowPitch.value
-      : (syncedTimelineTopGlobal.value - regionTopGlobal.value) + (dayIndex * rowPitch.value) + syncedRowCenterOffset.value - syncedTimelineScrollTop.value
-    const contentY = lineY + rowPitch.value / 2
+    const lineY = centerAnchorY.value + (dayIndex - motionIndex.value) * rowPitch.value
     const cells: RenderCell[] = list.map((a) => ({
       id: a.id,
       title: trimTitle(a.title),
@@ -223,10 +213,10 @@ const rows = computed<RenderRow[]>(() => {
     out.push({
       key: day,
       lineY,
-      contentY,
+      topY: lineY - rowPitch.value / 2,
       contentLeft,
       contentWidth,
-      opacity: calcOpacity(contentY),
+      opacity: calcOpacity(lineY - rowPitch.value / 2, lineY + rowPitch.value / 2),
       columns: Math.max(1, cells.length),
       cells
     })
@@ -235,32 +225,7 @@ const rows = computed<RenderRow[]>(() => {
   return out
 })
 
-function debugTagRegion(label: string) {
-  if (!DEBUG_SYNC) return
-  const now = performance.now()
-  if (now - lastDebugLogAt < 220) return
-  lastDebugLogAt = now
-  const sample = rows.value[0]
-  // eslint-disable-next-line no-console
-  console.log('[TagRegionSync]', label, {
-    currentDate: store.currentDate,
-    visibleFirst: visibleDays.value[0],
-    visibleLast: visibleDays.value[visibleDays.value.length - 1],
-    anchorIndex: Number(anchorIndex.value.toFixed(3)),
-    rowPitch: Number(rowPitch.value.toFixed(3)),
-    topTickYGlobal: sync.topTickYGlobal.value,
-    sampleRow: sample
-      ? {
-        key: sample.key,
-        lineY: Number(sample.lineY.toFixed(3)),
-        contentY: Number(sample.contentY.toFixed(3)),
-        firstMeta: sample.cells[0]?.meta
-      }
-      : null
-  })
-}
-
-function onArticleClick(id: string): void {
+function onArticleClick(id: string) {
   emit('tagClick', id)
 }
 
@@ -277,15 +242,8 @@ watch(() => store.currentDate, (nextDate) => {
 watch(() => sync.version.value, () => {
   syncFromBus()
   measureRegionRect()
+  measureMonthPickerBoundary()
 }, { flush: 'sync' })
-
-watch(
-  () => [store.currentDate, syncedCenterIndexFloat.value, sync.topTickYGlobal.value, syncedVisibleDates.value.length, rows.value.length],
-  () => {
-    debugTagRegion('state-change')
-  },
-  { flush: 'post' }
-)
 
 onMounted(() => {
   if (!containerRef.value) return
@@ -294,20 +252,33 @@ onMounted(() => {
     regionHeight.value = containerRef.value.clientHeight
     regionWidth.value = containerRef.value.clientWidth
     measureRegionRect()
+    measureMonthPickerBoundary()
   }
   applySize()
   syncFromBus()
   resizeObserver = new ResizeObserver(() => applySize())
   resizeObserver.observe(containerRef.value)
+  const picker = document.querySelector('.tag-col .outside-box') as HTMLElement | null
+  if (picker) {
+    pickerResizeObserver = new ResizeObserver(() => measureMonthPickerBoundary())
+    pickerResizeObserver.observe(picker)
+  }
   window.addEventListener('resize', measureRegionRect)
+  window.addEventListener('resize', measureMonthPickerBoundary)
 })
 
 onUnmounted(() => {
   if (resizeObserver && containerRef.value) {
     resizeObserver.unobserve(containerRef.value)
   }
+  const picker = document.querySelector('.tag-col .outside-box') as HTMLElement | null
+  if (pickerResizeObserver && picker) {
+    pickerResizeObserver.unobserve(picker)
+  }
   window.removeEventListener('resize', measureRegionRect)
+  window.removeEventListener('resize', measureMonthPickerBoundary)
   resizeObserver = null
+  pickerResizeObserver = null
 })
 </script>
 
@@ -318,9 +289,9 @@ onUnmounted(() => {
       :key="`${row.key}-band`"
       class="row-band"
       :style="{
-        top: `${row.lineY - (rowPitch / 2)}px`,
-        left: `${row.contentLeft - ROW_SIDE_PADDING}px`,
-        width: `${row.contentWidth + ROW_SIDE_PADDING}px`,
+        top: `${row.topY}px`,
+        left: `${row.contentLeft}px`,
+        width: `${row.contentWidth}px`,
         height: `${rowPitch}px`,
         opacity: String(row.opacity),
         gridTemplateColumns: `repeat(${row.columns}, minmax(0, 1fr))`
@@ -328,21 +299,21 @@ onUnmounted(() => {
     >
       <span class="row-line row-line-top" aria-hidden="true" />
       <span class="row-line row-line-bottom" aria-hidden="true" />
-      <div class="row-content">
-      <button
-        v-for="(cell, idx) in row.cells"
-        :key="cell.id"
-        type="button"
-        class="article-cell"
-        :class="{ 'is-not-first': idx > 0 }"
-        :title="cell.fullTitle"
-        @click="onArticleClick(cell.id)"
-      >
-        <span class="cell-main">
-          <span class="cell-title">{{ cell.title }}</span>
-          <span class="cell-meta">{{ cell.meta }}</span>
-        </span>
-      </button>
+      <div class="row-content" :style="{ gridTemplateColumns: `repeat(${row.columns}, minmax(0, 1fr))` }">
+        <button
+          v-for="(cell, idx) in row.cells"
+          :key="cell.id"
+          type="button"
+          class="article-cell"
+          :class="{ 'is-not-first': idx > 0 }"
+          :title="cell.fullTitle"
+          @click="onArticleClick(cell.id)"
+        >
+          <span class="cell-main">
+            <span class="cell-title">{{ cell.title }}</span>
+            <span class="cell-meta">{{ cell.meta }}</span>
+          </span>
+        </button>
       </div>
     </div>
   </section>
@@ -413,6 +384,7 @@ onUnmounted(() => {
   gap: 0.5rem;
   width: 100%;
   min-width: 0;
+  height: 100%;
 }
 
 .cell-title {
