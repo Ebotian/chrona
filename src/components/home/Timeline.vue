@@ -1,16 +1,19 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, nextTick } from 'vue'
+import { computed, onMounted, onUnmounted, ref, nextTick, watch } from 'vue'
 import { eachDayOfInterval, parseISO, format, addDays } from 'date-fns'
 import { useTimeStore } from '../../stores/time'
+import { publishTimelineSync } from '../../lib/timelineSync'
 
 const props = defineProps({
   startDate: { type: String, default: () => format(new Date(), 'yyyy-MM-01') },
-  endDate: { type: String, default: () => format(new Date(), 'yyyy-MM-dd') }
+  endDate: { type: String, default: () => format(new Date(), 'yyyy-MM-dd') },
+  externalJumpToken: { type: Number, default: 0 }
 })
 
 const emits = defineEmits(['dayFocus', 'dayStep'])
 
 const store = useTimeStore()
+const DEBUG_SYNC = import.meta.env.DEV && (globalThis as { __TIMELINE_DEBUG__?: boolean }).__TIMELINE_DEBUG__ === true
 
 const VISIBLE_DAYS = 31
 
@@ -72,6 +75,43 @@ let didLogInit = false
 let aligned = false
 let didLogMove = false
 let wheelFirstLimited = true
+let timelineDrivenUpdateDepth = 0
+let cachedContainerTop = 0
+let cachedContainerHalfHeight = 0
+let cachedRowHeight = 30
+let lastSyncLogAt = 0
+let moveRaf = 0
+let moveToken = 0
+let moveAnimating = false
+
+function debugTimelineSync(label: string) {
+  if (!DEBUG_SYNC) return
+  const now = performance.now()
+  if (now - lastSyncLogAt < 180) return
+  lastSyncLogAt = now
+  // eslint-disable-next-line no-console
+  console.log('[TimelineSync]', label, {
+    currentDate: getCurrentDate(),
+    daysFirst: days.value[0]?.date,
+    daysLast: days.value[days.value.length - 1]?.date,
+    centerIndexFloat: Number(lastFloatIndex.toFixed(3)),
+    rowPitch: Number(cachedRowHeight.toFixed(3)),
+    topTickYGlobal: Number((cachedContainerTop + cachedContainerHalfHeight - (lastFloatIndex * cachedRowHeight)).toFixed(3))
+  })
+}
+
+function withTimelineDrivenDateUpdate(fn: () => void) {
+  timelineDrivenUpdateDepth += 1
+  try {
+    fn()
+  } finally {
+    timelineDrivenUpdateDepth = Math.max(0, timelineDrivenUpdateDepth - 1)
+  }
+}
+
+function isTimelineDrivenDateUpdate() {
+  return timelineDrivenUpdateDepth > 0 || dragging || inertiaActive
+}
 
 function ensureAligned() {
   if (aligned) return
@@ -89,6 +129,29 @@ function ensureAligned() {
     }
   } catch (e) { }
   aligned = true
+}
+
+function jumpToCurrentDateInstantly() {
+  const idx = days.value.findIndex(d => d.date === getCurrentDate())
+  if (idx < 0 || !container.value) return
+  const scrollTop = computeScrollTopForIndex(idx)
+  container.value.scrollTop = scrollTop
+  const rowHeight = getRowHeight()
+  lastFloatIndex = (scrollTop + (container.value.clientHeight / 2) - rowHeight / 2) / rowHeight
+  hoverIndex.value = idx
+  lastHoverApplied = idx
+  aligned = true
+  publishSyncMetrics()
+}
+
+async function instantJumpToStoreDate() {
+  cancelInertia()
+  await nextTick()
+  await new Promise(resolve => requestAnimationFrame(() => resolve(undefined)))
+  updateViewportCenterOn(getCurrentDate())
+  await nextTick()
+  await new Promise(resolve => requestAnimationFrame(() => resolve(undefined)))
+  jumpToCurrentDateInstantly()
 }
 
 // Local hover selection during drag — we will write to store for live UI updates
@@ -134,6 +197,52 @@ function getRowHeight() {
   return row.offsetHeight + gap
 }
 
+function publishSyncMetrics() {
+  if (!container.value) return
+  const containerRect = container.value.getBoundingClientRect()
+  const rowHeight = getRowHeight()
+  cachedContainerTop = containerRect.top
+  cachedContainerHalfHeight = container.value.clientHeight / 2
+  cachedRowHeight = rowHeight
+  const axisEl = container.value.querySelector('.axis') as HTMLElement | null
+  let axisX: number | null = null
+  if (axisEl) {
+    const axisRect = axisEl.getBoundingClientRect()
+    const style = getComputedStyle(axisEl)
+    const connectorLeftRaw = style.getPropertyValue('--connector-left').trim()
+    const connectorLeft = parseFloat(connectorLeftRaw || '0')
+    if (Number.isFinite(connectorLeft)) {
+      axisX = axisRect.left + connectorLeft
+    }
+  }
+  publishTimelineSync({
+    axisXGlobal: axisX,
+    centerYGlobal: cachedContainerTop + cachedContainerHalfHeight,
+    topTickYGlobal: cachedContainerTop + cachedContainerHalfHeight - (lastFloatIndex * cachedRowHeight),
+    timelineTopGlobal: cachedContainerTop,
+    timelineScrollTop: container.value.scrollTop,
+    rowCenterOffset: cachedRowHeight / 2,
+    rowPitch: rowHeight,
+    motionMs: 180,
+    centerIndexFloat: lastFloatIndex,
+    topDateIso: days.value[0]?.date ?? null,
+    visibleDates: days.value.map(d => d.date)
+  })
+  debugTimelineSync('publishSyncMetrics')
+}
+
+function publishSyncPositionOnly() {
+  if (!container.value || cachedRowHeight <= 0) return
+  publishTimelineSync({
+    centerIndexFloat: lastFloatIndex,
+    topTickYGlobal: cachedContainerTop + cachedContainerHalfHeight - (lastFloatIndex * cachedRowHeight),
+    timelineTopGlobal: cachedContainerTop,
+    timelineScrollTop: container.value.scrollTop,
+    rowCenterOffset: cachedRowHeight / 2
+  })
+  debugTimelineSync('publishSyncPositionOnly')
+}
+
 function computeScrollTopForIndex(index: number) {
   const rowHeight = getRowHeight()
   const containerEl = container.value
@@ -156,7 +265,17 @@ function updateViewportCenterOn(dateIso: string | { value?: string }) {
 }
 
 // Movement primitives
-function performMoveToIndex(targetIndex: number, duration = 200, postCallback?: () => void) {
+function cancelMoveAnimation() {
+  moveToken += 1
+  if (moveRaf) {
+    cancelAnimationFrame(moveRaf)
+    moveRaf = 0
+  }
+  moveAnimating = false
+}
+
+function performMoveToIndex(targetIndex: number, duration = 200, postCallback?: () => void, interruptCurrent = false) {
+  if (interruptCurrent) cancelMoveAnimation()
   return smoothMoveToIndex(targetIndex, duration).then(() => {
     const finalDate = days.value[targetIndex]?.date
     if (finalDate) updateViewportCenterOn(finalDate)
@@ -168,6 +287,9 @@ function smoothMoveToIndex(targetIndex: number, duration = 200): Promise<void> {
   return new Promise((resolve) => {
     const el = container.value
     if (!el) { resolve(); return }
+    const hadActiveMove = moveAnimating
+    const token = ++moveToken
+    moveAnimating = true
     const elNN = el as HTMLElement
     let startScroll = elNN.scrollTop
     // if the container's scrollTop looks uninitialized (far from expected for currentDate),
@@ -177,7 +299,7 @@ function smoothMoveToIndex(targetIndex: number, duration = 200): Promise<void> {
       if (curIdx >= 0) {
         const expected = computeScrollTopForIndex(curIdx)
         const rowHeight = getRowHeight()
-        if (Math.abs(startScroll - expected) > rowHeight * 3) {
+        if (!hadActiveMove && Math.abs(startScroll - expected) > rowHeight * 3) {
           elNN.scrollTop = expected
           startScroll = expected
           // also initialize float index state
@@ -192,7 +314,8 @@ function smoothMoveToIndex(targetIndex: number, duration = 200): Promise<void> {
       elNN.scrollTop = endScroll
       const idx = mapFloatToIndex(targetIndex, 'above')
       const target = days.value[idx]
-      if (target) store.setCurrentDate(target.date)
+      if (target) withTimelineDrivenDateUpdate(() => store.setCurrentDate(target.date))
+      moveAnimating = false
       resolve()
       return
     }
@@ -201,6 +324,11 @@ function smoothMoveToIndex(targetIndex: number, duration = 200): Promise<void> {
     function easeOutQuad(t: number) { return t * (2 - t) }
     let lastRounded = -1
     function step(now: number) {
+      if (token !== moveToken) {
+        moveAnimating = false
+        resolve()
+        return
+      }
       const t = Math.min(1, (now - startTime) / duration)
       const scroll = startScroll + (endScroll - startScroll) * easeOutQuad(t)
       elNN.scrollTop = scroll
@@ -208,17 +336,23 @@ function smoothMoveToIndex(targetIndex: number, duration = 200): Promise<void> {
       const rowHeight = getRowHeight()
       const floatIndexNow = (scroll + (elNN.clientHeight / 2) - rowHeight / 2) / rowHeight
       lastFloatIndex = floatIndexNow
+      publishSyncPositionOnly()
       const rounded = mapFloatToIndex(floatIndexNow, 'above')
       if (rounded !== lastRounded) {
         lastRounded = rounded
         const target = days.value[rounded]
-        if (target) store.setCurrentDate(target.date)
+        if (target) withTimelineDrivenDateUpdate(() => store.setCurrentDate(target.date))
       }
 
-      if (t < 1) requestAnimationFrame(step)
-      else resolve()
+      if (t < 1) {
+        moveRaf = requestAnimationFrame(step)
+      } else {
+        moveRaf = 0
+        moveAnimating = false
+        resolve()
+      }
     }
-    requestAnimationFrame(step)
+    moveRaf = requestAnimationFrame(step)
   })
 }
 
@@ -235,6 +369,9 @@ function handleWheel(e: WheelEvent) {
   const pixelsPerDay = rowHeight * PIXELS_PER_DAY_FACTOR
   // normalize wheel delta into fractional days to avoid pixel-unit startup spikes
   const deltaDays = (e.deltaY * WHEEL_SENSITIVITY) / pixelsPerDay
+  if (wheelAccumulatorDays !== 0 && Math.sign(deltaDays) !== Math.sign(wheelAccumulatorDays) && Math.abs(deltaDays) < 0.45) {
+    wheelAccumulatorDays = 0
+  }
   wheelAccumulatorDays += deltaDays
   let steps = Math.trunc(Math.abs(wheelAccumulatorDays))
   if (steps <= 0) return
@@ -248,11 +385,12 @@ function handleWheel(e: WheelEvent) {
     stepAmount = sign * 1
     wheelFirstLimited = false
   }
-  const curIdx = days.value.findIndex(d => d.date === getCurrentDate())
-  const targetIdx = Math.max(0, Math.min(days.value.length - 1, (curIdx >= 0 ? curIdx : 0) + stepAmount))
+  const fallbackIdx = days.value.findIndex(d => d.date === getCurrentDate())
+  const baseIdx = mapFloatToIndex(Number.isFinite(lastFloatIndex) ? lastFloatIndex : fallbackIdx, 'above')
+  const targetIdx = Math.max(0, Math.min(days.value.length - 1, baseIdx + stepAmount))
   // diagnostic: if a large step remains, log detailed state once
   if (Math.abs(stepAmount) > 2 && !didLogMove) { didLogMove = true }
-  performMoveToIndex(targetIdx, 180, () => emits('dayStep', stepAmount))
+  performMoveToIndex(targetIdx, 180, () => emits('dayStep', stepAmount), true)
   wheelAccumulatorDays -= stepAmount
 }
 
@@ -265,21 +403,24 @@ function handleKey(e: KeyboardEvent) {
   if (e.key === 'ArrowDown') {
     const curIdx = days.value.findIndex(d => d.date === getCurrentDate())
     const target = Math.min(days.value.length - 1, (curIdx >= 0 ? curIdx : 0) + 1)
-    performMoveToIndex(target, 160, () => emits('dayStep', 1))
+    performMoveToIndex(target, 160, () => emits('dayStep', 1), true)
   } else if (e.key === 'ArrowUp') {
     const curIdx = days.value.findIndex(d => d.date === getCurrentDate())
     const target = Math.max(0, (curIdx >= 0 ? curIdx : 0) - 1)
-    performMoveToIndex(target, 160, () => emits('dayStep', -1))
+    performMoveToIndex(target, 160, () => emits('dayStep', -1), true)
   }
 }
 
 function onTickClick(date: string) {
   const idx = days.value.findIndex(d => d.date === date)
   if (idx < 0) return
-  performMoveToIndex(idx, 220, () => emits('dayFocus', date))
+  performMoveToIndex(idx, 220, () => emits('dayFocus', date), true)
 }
 
 function onPointerDown(e: PointerEvent) {
+  if (!container.value) return
+  const target = e.target as Node | null
+  if (!target || !container.value.contains(target)) return
   ensureAligned()
   if (e.button !== 0) return
   if (!didLogInit) {
@@ -287,6 +428,7 @@ function onPointerDown(e: PointerEvent) {
     try { const rowHeight = getRowHeight(); void rowHeight } catch (e) { }
   }
   cancelInertia()
+  cancelMoveAnimation()
   dragging = true
   startY = e.clientY
   lastPositions = [{ t: Date.now(), y: e.clientY }]
@@ -320,10 +462,11 @@ function onPointerMove(e: PointerEvent) {
     if (snapped >= 0 && days.value[snapped]) {
       if (snapped !== lastHoverApplied) {
         lastHoverApplied = snapped
-        store.setCurrentDate(days.value[snapped].date)
+        withTimelineDrivenDateUpdate(() => store.setCurrentDate(days.value[snapped].date))
       }
     }
     if (container.value) container.value.scrollTop = computeScrollTopForIndex(lastFloatIndex)
+    publishSyncPositionOnly()
   })
 }
 
@@ -337,7 +480,7 @@ function onPointerUp() {
   const chosen = hoverIndex.value ?? mapFloatToIndex(lastFloatIndex, 'above')
 
   if (typeof chosen === 'number' && days.value[chosen]) {
-    store.setCurrentDate(days.value[chosen].date)
+    withTimelineDrivenDateUpdate(() => store.setCurrentDate(days.value[chosen].date))
     emits('dayFocus', days.value[chosen].date)
   } else {
     emits('dayFocus', getCurrentDate())
@@ -364,7 +507,7 @@ function onPointerUp() {
 
   // otherwise align to current store date
   const finalIdx = days.value.findIndex(d => d.date === getCurrentDate())
-  if (finalIdx >= 0) performMoveToIndex(finalIdx, 220)
+  if (finalIdx >= 0) performMoveToIndex(finalIdx, 220, undefined, true)
 }
 
 function cancelInertia() {
@@ -396,10 +539,12 @@ function startInertia(initialVelocityPxPerMs: number, pixelsPerDay: number) {
     const idx = mapFloatToIndex(floatIndex, 'above')
     const target = days.value[idx]
     if (target) {
-      store.setCurrentDate(target.date)
+      withTimelineDrivenDateUpdate(() => store.setCurrentDate(target.date))
       updateViewportCenterOn(target.date)
     }
     if (container.value) container.value.scrollTop = computeScrollTopForIndex(floatIndex)
+    lastFloatIndex = floatIndex
+    publishSyncPositionOnly()
     v *= Math.pow(INERTIA_DECAY_PER_FRAME, Math.max(1, dt / 16.67))
     if (Math.abs(v) <= INERTIA_STOP_VELOCITY) { cancelInertia(); return }
     inertiaRaf = requestAnimationFrame(step)
@@ -408,9 +553,9 @@ function startInertia(initialVelocityPxPerMs: number, pixelsPerDay: number) {
 }
 
 onMounted(() => {
-  window.addEventListener('wheel', handleWheel, { passive: true })
-  window.addEventListener('keydown', handleKey)
-  window.addEventListener('pointerdown', onPointerDown);
+  window.addEventListener('wheel', handleWheel, { passive: true });
+  window.addEventListener('keydown', handleKey);
+  window.addEventListener('resize', publishSyncMetrics);
   // after first render, align viewport to current date to stabilize geometry
   (async () => {
     await nextTick()
@@ -431,24 +576,49 @@ onMounted(() => {
         hoverIndex.value = idx
         lastHoverApplied = idx
         // apply scroll again next frame to be safe
-        requestAnimationFrame(() => { if (container.value) container.value.scrollTop = scrollTop })
+        requestAnimationFrame(() => {
+          if (container.value) container.value.scrollTop = scrollTop
+          publishSyncMetrics()
+        })
       }
     } catch (e) {
       // ignore
     }
+    publishSyncMetrics()
   })()
 })
 
 onUnmounted(() => {
   window.removeEventListener('wheel', handleWheel)
   window.removeEventListener('keydown', handleKey)
-  window.removeEventListener('pointerdown', onPointerDown)
+  window.removeEventListener('resize', publishSyncMetrics)
+  cancelMoveAnimation()
 })
+
+watch(() => store.currentDate, async (nextDate) => {
+  if (isTimelineDrivenDateUpdate()) return
+  updateViewportCenterOn(nextDate)
+  await nextTick()
+  jumpToCurrentDateInstantly()
+}, { flush: 'sync' })
+
+watch(() => props.externalJumpToken, async () => {
+  await instantJumpToStoreDate()
+  publishSyncMetrics()
+})
+
+watch(days, () => {
+  if (dragging || inertiaActive || !container.value) return
+  const idx = days.value.findIndex(d => d.date === getCurrentDate())
+  if (idx < 0) return
+  lastFloatIndex = idx
+  publishSyncMetrics()
+}, { flush: 'post' })
 </script>
 
 <template>
   <div class="timeline-wrap">
-    <div class="timeline" ref="container">
+    <div class="timeline" ref="container" @pointerdown="onPointerDown">
       <div class="axis">
         <ul class="ticks">
           <li v-for="d in days" :key="d.date" class="tick-row" @click="onTickClick(d.date)">
@@ -471,6 +641,7 @@ onUnmounted(() => {
   height: 100%;
   overflow: auto;
   box-sizing: border-box;
+  scroll-behavior: auto;
 }
 
 .timeline-wrap {

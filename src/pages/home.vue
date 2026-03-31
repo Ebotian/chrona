@@ -1,4 +1,5 @@
-<script setup>
+<script setup lang="ts">
+import { computed, ref } from 'vue'
 import ProgressRail from '../components/home/ProgressRail.vue'
 import Timeline from '../components/home/Timeline.vue'
 import MonthPicker from '../components/home/MonthPicker.vue'
@@ -6,6 +7,22 @@ import TagRegion from '../components/home/TagRegion.vue'
 import SearchBar from '../components/home/SearchBar.vue'
 import ProfileCard from '../components/home/ProfileCard.vue'
 import MiniPlayer from '../components/home/MiniPlayer.vue'
+import { loadPostsFromClient, toTimelineEntries } from '../lib/postClientLoader'
+import { useTimeStore } from '../stores/time'
+
+const store = useTimeStore()
+const posts = loadPostsFromClient()
+const timelineEntries = computed(() => toTimelineEntries(posts))
+const monthJumpToken = ref(0)
+
+function onMonthPickerChange() {
+  monthJumpToken.value += 1
+}
+
+const latestDatedPost = posts.find((p) => Boolean(p.date))
+if (latestDatedPost?.date) {
+  store.setCurrentDate(latestDatedPost.date)
+}
 </script>
 <template>
   <div class="home-container">
@@ -15,11 +32,11 @@ import MiniPlayer from '../components/home/MiniPlayer.vue'
 
     <main class="center">
       <section class="timeline-col">
-        <Timeline />
+        <Timeline :external-jump-token="monthJumpToken" />
       </section>
       <section class="tag-col">
-        <MonthPicker />
-        <TagRegion />
+        <MonthPicker @change="onMonthPickerChange" />
+        <TagRegion :entries="timelineEntries" />
       </section>
     </main>
 
@@ -77,7 +94,7 @@ import MiniPlayer from '../components/home/MiniPlayer.vue'
   flex:15 1 0;
   display: flex;
   flex-direction: column;
-  overflow: auto;
+  overflow: hidden;
   height: 100%;
 }
 
@@ -89,7 +106,7 @@ import MiniPlayer from '../components/home/MiniPlayer.vue'
 .tag-col> :nth-child(2) {
   flex: 15 1 0;
   min-height: 0;
-  overflow: auto;
+  overflow: visible;
 }
 
 .right {
