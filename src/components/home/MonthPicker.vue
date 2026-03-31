@@ -261,6 +261,6 @@ function onWeekClick(week: HeatWeek) {
 }
 
 .week-cell.lv-future {
-  background: #5f6368;
+  background: #b2bbbe;
 }
 </style>

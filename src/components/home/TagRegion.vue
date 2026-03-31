@@ -225,6 +225,27 @@ const rows = computed<RenderRow[]>(() => {
   return out
 })
 
+const hasTenDayEmptyRun = computed(() => {
+  const days = visibleDays.value
+  if (days.length < 10) return false
+  // sliding window of 10 days
+  for (let i = 0; i <= days.length - 10; i++) {
+    let ok = true
+    for (let j = 0; j < 10; j++) {
+      const d = days[i + j]
+      const list = normalizedEntries.value[d]
+      if (list && list.length > 0) { ok = false; break }
+    }
+    if (ok) return true
+  }
+  return false
+})
+
+const showEmptyMessage = computed(() => {
+  // show when there's a 10-day empty run and there are no article rows in view
+  return hasTenDayEmptyRun.value && rows.value.length === 0
+})
+
 function onArticleClick(id: string) {
   emit('tagClick', id)
 }
@@ -284,37 +305,31 @@ onUnmounted(() => {
 
 <template>
   <section ref="containerRef" class="tag-region" aria-label="Timeline article region">
-    <div
-      v-for="row in rows"
-      :key="`${row.key}-band`"
-      class="row-band"
-      :style="{
-        top: `${row.topY}px`,
-        left: `${row.contentLeft}px`,
-        width: `${row.contentWidth}px`,
-        height: `${rowPitch}px`,
-        opacity: String(row.opacity),
-        gridTemplateColumns: `repeat(${row.columns}, minmax(0, 1fr))`
-      }"
-    >
+    <div v-for="row in rows" :key="`${row.key}-band`" class="row-band" :style="{
+      top: `${row.topY}px`,
+      left: `${row.contentLeft}px`,
+      width: `${row.contentWidth}px`,
+      height: `${rowPitch}px`,
+      opacity: String(row.opacity),
+      gridTemplateColumns: `repeat(${row.columns}, minmax(0, 1fr))`
+    }">
       <span class="row-line row-line-top" aria-hidden="true" />
       <span class="row-line row-line-bottom" aria-hidden="true" />
       <div class="row-content" :style="{ gridTemplateColumns: `repeat(${row.columns}, minmax(0, 1fr))` }">
-        <button
-          v-for="(cell, idx) in row.cells"
-          :key="cell.id"
-          type="button"
-          class="article-cell"
-          :class="{ 'is-not-first': idx > 0 }"
-          :title="cell.fullTitle"
-          @click="onArticleClick(cell.id)"
-        >
+        <button v-for="(cell, idx) in row.cells" :key="cell.id" type="button" class="article-cell"
+          :class="{ 'is-not-first': idx > 0 }" :title="cell.fullTitle" @click="onArticleClick(cell.id)">
           <span class="cell-main">
             <span class="cell-title">{{ cell.title }}</span>
             <span class="cell-meta">{{ cell.meta }}</span>
           </span>
         </button>
       </div>
+    </div>
+    <div class="empty-message"
+      :style="{ opacity: showEmptyMessage ? 1 : 0, pointerEvents: showEmptyMessage ? 'auto' : 'none' }"
+      :aria-hidden="!showEmptyMessage">
+      <div class="empty-text">有的日子干净得像水一样</div>
+      <div class="empty-text">不留下一丝回忆</div>
     </div>
   </section>
 </template>
@@ -405,5 +420,30 @@ onUnmounted(() => {
 .article-cell:hover .cell-title,
 .article-cell:focus-visible .cell-title {
   text-decoration: none;
+}
+
+.empty-message {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  z-index: 5;
+  transition: opacity 500ms ease;
+  opacity: 0;
+  pointer-events: none;
+  color: rgba(35, 118, 183, 0.95);
+}
+
+.empty-message .empty-text {
+  font-size: 1rem;
+  line-height: 1.3;
+  user-select: none;
+}
+
+.empty-message .empty-text+.empty-text {
+  margin-top: 0.25rem;
+  font-size: 0.95rem;
+  opacity: 0.9;
 }
 </style>

@@ -44,9 +44,9 @@
 
 - **RightColumn（工具列）**
   - 顶部：圆角矩形横向搜索栏（SearchBar）。按全文或标题搜索文章，匹配后将对应文章日期写入并使该日期在 Timeline 中垂直居中。排序为最新的优先.搜索栏构成:高度和左侧矩形块上下侧都对齐可视范围一致,宽度以黄金比例确定,外轮廓颜色和配置都和MonthPicker一致,内部左侧简约放大镜图标,可点击触发搜索,|竖线隔开,中间为输入区域,用于输入检索字段,|竖线隔开,右侧为向下三角和计数比如"3/10"(当前查看/总匹配数),点击三角跳转下一个被找到的文章对应的时间
-  - 中部：个人 profile（纯透明容器、无边框、无背景色、无阴影——头像、用户名、友链按钮、社媒图标、技能/简介文本）。
+  - 中部：个人 profile（纯透明容器、无边框、无背景色、无阴影——头像:/home/ebit/chrona/public/avatar.jpg、用户名:Nicolette86132、友链按钮(朋友的简约标志)、社媒图标(编程:https://github.com/Ebotian,社交:https://x.com/AsilenA123,音乐:https://music.163.com/#/user/home?id=351729969)、技能:(TS,JS,VUE,TSX,CSS,HTML,MYSQL,VHDL,VERILOG,C,CPP,ESP/STM32,LATEX,LINUX)。
     - 样式提示：使用内间距与间隙来区分子区域；避免使用边线、背景色或阴影，以保持界面极简与透明感。
-  - 底部：简洁音乐播放器（上一首 | 播放/暂停 | 下一首），下方显示专辑封面。
+  - 底部：第一行:简洁音乐播放器控制（上一首(<) | 播放/暂停(=/\delta) | 下一首(>)）,用简单的符号表示不要文字，简单的1px竖线连接上下边缘分割可点击区域,播放暂停有淡入淡出的切换动效,下方显示专辑封面,根据控制的上下一首,向左或者右无缝侧滑切换,音乐在:/home/ebit/chrona/music,同名专辑在:/home/ebit/chrona/music/album,边框采用圆角矩形,颜色#aed9d4,控制区用半透明的#bbe7e2做背景色
 
 **Component Contract (Props / Events / Responsibilities)**
 

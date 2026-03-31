@@ -112,7 +112,7 @@ watch(normalizedQuery, () => {
   justify-content: flex-start;
   height: 100%;
   width: 100%;
-  padding: 0.375rem 0.625rem 0.375rem 0;
+  padding: 0.375rem 0.625rem 0.375rem 0.375rem;
   box-sizing: border-box;
 }
 
@@ -122,7 +122,7 @@ watch(normalizedQuery, () => {
   display: grid;
   grid-template-columns: 2.5rem 1px minmax(0, 1fr) 1px 4.9rem;
   align-items: stretch;
-  border: 0.0625rem solid #1772b4;
+  border: 0.0625rem solid #8abcd1;
   border-radius: 0.375rem;
   background: transparent;
   overflow: hidden;
@@ -153,7 +153,7 @@ watch(normalizedQuery, () => {
 .magnifier {
   width: 0.8rem;
   height: 0.8rem;
-  border: 0.1rem solid #1772b4;
+  border: 0.1rem solid #8abcd1;
   border-radius: 50%;
   position: relative;
   box-sizing: border-box;
@@ -164,7 +164,7 @@ watch(normalizedQuery, () => {
   position: absolute;
   width: 0.42rem;
   height: 0.1rem;
-  background: #1772b4;
+  background: #8abcd1;
   right: -0.3rem;
   bottom: -0.14rem;
   transform: rotate(45deg);
@@ -175,7 +175,7 @@ watch(normalizedQuery, () => {
   width: 1px;
   align-self: stretch;
   height: 100%;
-  background: #1772b4;
+  background: #8abcd1;
 }
 
 .search-input {
@@ -190,7 +190,7 @@ watch(normalizedQuery, () => {
   font-size: 0.8125rem;
   line-height: 1.1;
   outline: none;
-  caret-color: #1772b4;
+  caret-color: #8abcd1;
   -webkit-text-fill-color: #0f2143;
 }
 
@@ -227,7 +227,7 @@ watch(normalizedQuery, () => {
   height: 0;
   border-left: 0.38rem solid transparent;
   border-right: 0.38rem solid transparent;
-  border-top: 0.56rem solid #1772b4;
+  border-top: 0.56rem solid #8abcd1;
   flex: 0 0 auto;
 }
 </style>
