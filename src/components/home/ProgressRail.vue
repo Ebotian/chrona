@@ -32,17 +32,17 @@ const clamped = computed(() => {
 .label {
   text-align: center;
   font-weight: 600;
-  margin-bottom: 6px;
+  margin-bottom: 0.375rem;
   color: inherit;
 }
 
 .rail {
   position: relative;
-  width: 5px;
+  width: 0.3125rem;
   height: 25vh;
   /* 1/4 of viewport height as design */
-  min-height: 120px;
-  border-radius: 6px;
+  min-height: 7.5rem;
+  border-radius: 0.375rem;
   /* full spectrum from bottom -> top (desaturated for subtle appearance) */
   background: linear-gradient(to top,
       hsl(0 55% 50%) 0%,

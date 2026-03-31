@@ -40,8 +40,8 @@ import MiniPlayer from '../components/home/MiniPlayer.vue'
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 12px;
-  border: 1px solid var(--border, rgba(0, 0, 0, 0.12));
+  padding: 0.75rem;
+  border: 0.0625rem solid var(--border, rgba(0, 0, 0, 0.12));
   border-radius: 0;
   background: transparent;
   color: inherit;
@@ -112,12 +112,12 @@ import MiniPlayer from '../components/home/MiniPlayer.vue'
 }
 
 .right> :nth-child(2) {
-  flex: 8 1 0;
+  flex: 15 1 0;
   min-height: 0;
 }
 
 .right> :nth-child(3) {
-  flex: 7 1 0;
+  flex: 14 1 0;
   min-height: 0;
 }
 </style>

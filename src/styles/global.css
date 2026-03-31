@@ -1,0 +1,45 @@
+/* Global styles and rem-based scaling
+   Long-term approach: drive UI sizes from rem by adjusting root font-size.
+   Set --ui-scale to 2 to make 100% browser zoom look like 200%.
+*/
+
+:root {
+  /* Root base font size in px. Change this to adjust rem scale globally. */
+  --base-font-size: 2rem;
+}
+
+html {
+  /* Use root font-size so 1rem == 1rem by default */
+  font-size: var(--base-font-size);
+  box-sizing: border-box;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: inherit;
+}
+
+body {
+  margin: 0;
+  background-color: #FFF8E1;
+  color: #000;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+}
+
+/* Helpful utility: adjust root font-size for debugging */
+.no-ui-scale {
+  font-size: 1rem !important;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Small reset */
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}

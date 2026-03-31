@@ -17,7 +17,7 @@ function formatDate(d: Date) {
 }
 
 export const useTimeStore = defineStore('time', () => {
-  const currentDate = ref<string>(new Date().toISOString().slice(0, 10))
+  const currentDate = ref<string>(format(new Date(), 'yyyy-MM-dd'))
   // const currentDate = ref<string>('2024-12-30')
   const viewportStart = ref<string | null>(null)
   const viewportEnd = ref<string | null>(null)

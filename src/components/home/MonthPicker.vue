@@ -1,11 +1,29 @@
 <script setup lang="ts">
 
-const props = defineProps({
-  month: { type: Number, default: () => new Date().getMonth() + 1 }, // 1-12
-  year: { type: Number, default: () => new Date().getFullYear() }
-})
+import { useTimeStore } from '../../stores/time'
+import { computed } from 'vue'
 
 const emits = defineEmits(['change'])
+
+const store = useTimeStore()
+
+const selectedMonth = computed(() => {
+  try {
+    const d = new Date(store.currentDate)
+    return d.getMonth() + 1
+  } catch (e) {
+    return new Date().getMonth() + 1
+  }
+})
+
+const selectedYear = computed(() => {
+  try {
+    const d = new Date(store.currentDate)
+    return d.getFullYear()
+  } catch (e) {
+    return new Date().getFullYear()
+  }
+})
 
 const months = Array.from({ length: 12 }, (_, i) => i + 1)
 const yearRange = (() => {
@@ -19,23 +37,27 @@ const yearRange = (() => {
 
 function onMonthChange(e: Event) {
   const m = Number((e.target as HTMLSelectElement).value)
-  emits('change', { month: m, year: props.year })
+  // align store to the selected month keeping the current selected year
+  store.alignToMonth(m, selectedYear.value)
+  emits('change', { month: m, year: selectedYear.value })
 }
 
 function onYearChange(e: Event) {
   const y = Number((e.target as HTMLSelectElement).value)
-  emits('change', { month: props.month, year: y })
+  // align store to the selected year keeping the current selected month
+  store.alignToMonth(selectedMonth.value, y)
+  emits('change', { month: selectedMonth.value, year: y })
 }
 </script>
 
 <template>
   <div class="outside-box">
     <div class="left" role="group" aria-label="Month picker">
-      <select class="mp-select mp-month" :value="props.month" @change="onMonthChange" aria-label="Month">
+      <select class="mp-select mp-month" :value="selectedMonth" @change="onMonthChange" aria-label="Month">
         <option v-for="m in months" :key="m" :value="m">{{ String(m).padStart(2, '0') }}</option>
       </select>
       <span class="sep">|</span>
-      <select class="mp-select mp-year" :value="props.year" @change="onYearChange" aria-label="Year">
+      <select class="mp-select mp-year" :value="selectedYear" @change="onYearChange" aria-label="Year">
         <option v-for="y in yearRange" :key="y" :value="y">{{ y }}</option>
       </select>
     </div>
@@ -50,20 +72,20 @@ function onYearChange(e: Event) {
   align-items: space-between;
   width: 100%;
   box-sizing: border-box;
-  padding: 6px 10px 6px 0;
+  padding: 0.375rem 0.625rem 0.375rem 0;
 }
 
 .left {
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  border: 1px solid #1772b4;
-  border-radius: 6px;
+  gap: 0.5rem;
+  padding: 0.375rem 0.625rem;
+  border: 0.0625rem solid #1772b4;
+  border-radius: 0.375rem;
   background: transparent;
   color: #000035;
-  font-size: 13px;
+  font-size: 0.8125rem;
   box-sizing: border-box;
   flex: 0 0 auto;
 }
@@ -83,8 +105,8 @@ function onYearChange(e: Event) {
 
 /* 保留可见的焦点状态（可选） */
 .mp-select:focus {
-  outline: 2px solid rgba(23, 114, 180, 0.18);
-  outline-offset: 2px;
+  outline: 0.125rem solid rgba(23, 114, 180, 0.18);
+  outline-offset: 0.125rem;
 }
 
 
@@ -95,4 +117,4 @@ function onYearChange(e: Event) {
   pointer-events: none;
   background: transparent;
 }
-</style>
+</style>625re
