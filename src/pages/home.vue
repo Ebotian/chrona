@@ -74,7 +74,7 @@ import MiniPlayer from '../components/home/MiniPlayer.vue'
 }
 
 .tag-col {
-  flex: 4 1 0;
+  flex:15 1 0;
   display: flex;
   flex-direction: column;
   overflow: auto;
@@ -119,13 +119,5 @@ import MiniPlayer from '../components/home/MiniPlayer.vue'
 .right> :nth-child(3) {
   flex: 7 1 0;
   min-height: 0;
-}
-</style>
-
-<style>
-/* 临时统一占位视觉：在页面级别覆盖所有占位组件的边框与圆角 */
-.home-container .placeholder {
-  border: 1px solid var(--border, rgba(0, 0, 0, 0.12));
-  border-radius: 0 !important;
 }
 </style>
