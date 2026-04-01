@@ -4,52 +4,125 @@
       <div class="top-row">
         <img class="avatar" src="/avatar.jpg" alt="Nicolette86132 头像" />
         <div class="name">Nicolette86132</div>
+        <button class="action-btn" type="button" @click="toggleCommentView">
+          {{ viewMode === 'comments' ? '返回' : '留言' }}
+        </button>
       </div>
-      <div class="icon-row" aria-hidden="false">
-        <a class="icon" href="mailto:yiboxiaotian@nuaa.edu.cn" aria-label="Email">
-          <img class="icon-img" src="https://cdn.jsdelivr.net/npm/feather-icons@4.28.0/dist/icons/mail.svg"
-            alt="Email" />
-        </a>
-        <a class="icon" href="https://github.com/Ebotian" target="_blank" rel="noopener" aria-label="GitHub">
-          <img class="icon-img" src="https://cdn.jsdelivr.net/npm/simple-icons@v8/icons/github.svg" alt="GitHub" />
-        </a>
-        <a class="icon" href="https://x.com/AsilenA123" target="_blank" rel="noopener" aria-label="Twitter">
-          <img class="icon-img" src="https://cdn.jsdelivr.net/npm/simple-icons@v8/icons/twitter.svg" alt="Twitter" />
-        </a>
-        <a class="icon" href="https://music.163.com/#/user/home?id=351729969" target="_blank" rel="noopener"
-          aria-label="Music">
-          <img class="icon-img" src="https://cdn.jsdelivr.net/npm/feather-icons@4.28.0/dist/icons/music.svg"
-            alt="Music" />
-        </a>
-        <a class="friend-link" href="https://ebotian-blog.vercel.app/friends" title="友链" aria-label="友链按钮">友链</a>
-      </div>
-      <div class="skills">
-        <span class="chip">TS</span>
-        <span class="chip">JS</span>
-        <span class="chip">VUE</span>
-        <span class="chip">TSX</span>
-        <span class="chip">MYSQL</span>
-        <span class="chip">VHDL</span>
-        <span class="chip">VERILOG</span>
-        <span class="chip">C</span>
-        <span class="chip">CPP</span>
-        <span class="chip">ESP/STM32</span>
-        <span class="chip">LATEX</span>
-        <span class="chip">PYTHON</span>
-        <span class="chip">LINUX</span>
+      <div class="switch-area" :class="{ comments: viewMode === 'comments' }">
+        <div class="main-panel" :class="{ hidden: viewMode === 'comments' }" aria-hidden="false">
+          <div class="icon-row" aria-hidden="false">
+            <a class="icon" href="mailto:yiboxiaotian@nuaa.edu.cn" aria-label="Email">
+              <img class="icon-img" src="https://cdn.jsdelivr.net/npm/feather-icons@4.28.0/dist/icons/mail.svg"
+                alt="Email" />
+            </a>
+            <a class="icon" href="https://github.com/Ebotian" target="_blank" rel="noopener" aria-label="GitHub">
+              <img class="icon-img" src="https://cdn.jsdelivr.net/npm/simple-icons@v8/icons/github.svg" alt="GitHub" />
+            </a>
+            <a class="icon" href="https://x.com/AsilenA123" target="_blank" rel="noopener" aria-label="Twitter">
+              <img class="icon-img" src="https://cdn.jsdelivr.net/npm/simple-icons@v8/icons/twitter.svg"
+                alt="Twitter" />
+            </a>
+            <a class="icon" href="https://music.163.com/#/user/home?id=351729969" target="_blank" rel="noopener"
+              aria-label="Music">
+              <img class="icon-img" src="https://cdn.jsdelivr.net/npm/feather-icons@4.28.0/dist/icons/music.svg"
+                alt="Music" />
+            </a>
+            <a class="friend-link" href="https://ebotian-blog.vercel.app/friends" title="友链" aria-label="友链按钮">友链</a>
+          </div>
+          <div class="skills">
+            <span class="chip">TS</span>
+            <span class="chip">JS</span>
+            <span class="chip">VUE</span>
+            <span class="chip">TSX</span>
+            <span class="chip">MYSQL</span>
+            <span class="chip">VHDL</span>
+            <span class="chip">VERILOG</span>
+            <span class="chip">C</span>
+            <span class="chip">CPP</span>
+            <span class="chip">ESP/STM32</span>
+            <span class="chip">LATEX</span>
+            <span class="chip">PYTHON</span>
+            <span class="chip">LINUX</span>
+          </div>
+        </div>
+
+        <div class="comment-panel" :class="{ visible: viewMode === 'comments' }" aria-hidden="true">
+          <div ref="utterancesRef" class="utterances-box">
+            <p v-if="commentLoadError" class="comment-fallback">{{ commentLoadError }}</p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-// purely presentational; no state needed
+import { nextTick, onBeforeUnmount, ref } from 'vue'
+
+const viewMode = ref<'main' | 'comments'>('main')
+const utterancesRef = ref<HTMLElement | null>(null)
+const commentLoadError = ref('')
+
+const UTTERANCES_REPO = 'Ebotian/chrona'
+const UTTERANCES_SCRIPT_ID = 'utterances-client-script'
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => window.setTimeout(resolve, ms))
+}
+
+function mountUtterances() {
+  const target = utterancesRef.value
+  if (!target) return
+  commentLoadError.value = ''
+  target.innerHTML = ''
+
+  const existing = document.getElementById(UTTERANCES_SCRIPT_ID) as HTMLScriptElement | null
+  if (existing) existing.remove()
+
+  const script = document.createElement('script')
+  script.id = UTTERANCES_SCRIPT_ID
+  script.src = 'https://utteranc.es/client.js'
+  script.async = true
+  script.crossOrigin = 'anonymous'
+  script.setAttribute('repo', UTTERANCES_REPO)
+  script.setAttribute('issue-term', 'pathname')
+  script.setAttribute('label', 'utterances')
+  script.setAttribute('theme', 'github-light')
+  script.setAttribute('crossorigin', 'anonymous')
+  script.onload = () => {
+    if (!target.querySelector('iframe')) {
+      commentLoadError.value = '留言区已加载，但尚未显示内容。'
+    }
+  }
+  script.onerror = () => {
+    commentLoadError.value = '留言区加载失败，请稍后重试。'
+  }
+  target.appendChild(script)
+}
+
+async function toggleCommentView() {
+  if (viewMode.value === 'comments') {
+    viewMode.value = 'main'
+    await sleep(10)
+    return
+  }
+
+  viewMode.value = 'comments'
+  await nextTick()
+  await sleep(10)
+  mountUtterances()
+}
+
+onBeforeUnmount(() => {
+  const script = document.getElementById(UTTERANCES_SCRIPT_ID)
+  if (script) script.remove()
+})
 </script>
 
 <style scoped>
 .profile-card {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.75rem;
   padding: 0.5rem 0.75rem;
   background: transparent;
@@ -62,7 +135,7 @@
   width: 56px;
   height: 56px;
   border-radius: 8px;
-  border: 1px solid #b0d5df;
+  border: 1px solid #c6dfc8;
   object-fit: cover;
   flex: 0 0 auto;
 }
@@ -71,6 +144,8 @@
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
+  width: 100%;
+  min-height: 0;
 }
 
 .top-row {
@@ -82,6 +157,79 @@
 .name {
   font-weight: 600;
   font-size: 0.98rem;
+}
+
+.action-btn {
+  margin-left: auto;
+  border: none;
+  background: #c6dfc8;
+  color: #23563d;
+  border-radius: 8px;
+  padding: 0.3rem 0.75rem;
+  font-size: 0.86rem;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: opacity 10ms linear, background-color 10ms linear;
+}
+
+.action-btn:hover {
+  opacity: 0.7;
+}
+
+.switch-area {
+  position: relative;
+  width: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.switch-area.comments {
+  min-height: 18rem;
+}
+
+.main-panel,
+.comment-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  width: 100%;
+  overflow: hidden;
+  transition: opacity 10ms linear;
+}
+
+.main-panel {
+  position: relative;
+  z-index: 1;
+}
+
+.main-panel.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.comment-panel {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  max-height: none;
+  z-index: 2;
+}
+
+.comment-panel.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.utterances-box {
+  width: 100%;
+  min-height: 18rem;
+}
+
+.comment-fallback {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #6c9bca;
 }
 
 .links {
