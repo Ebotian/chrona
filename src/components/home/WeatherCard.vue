@@ -21,19 +21,20 @@ type WeatherScheme = {
   text: { primary: string; secondary: string; hint: string; accent: string }
 }
 
-type WeatherEntry = {
-  astronomy?: Array<{ sunrise?: string; sunset?: string }>
-}
-
-type WttrPayload = {
-  current_condition?: Array<{
-    temp_C?: string
-    weatherDesc?: Array<{ value?: string }>
-    humidity?: string
-    windspeedKmph?: string
-    winddir16Point?: string
-  }>
-  weather?: WeatherEntry[]
+type OpenMeteoPayload = {
+  current?: {
+    time?: string
+    temperature_2m?: number
+    relative_humidity_2m?: number
+    wind_speed_10m?: number
+    wind_direction_10m?: number
+    weather_code?: number
+    is_day?: number
+  }
+  daily?: {
+    sunrise?: string[]
+    sunset?: string[]
+  }
 }
 
 const props = withDefaults(
@@ -41,24 +42,93 @@ const props = withDefaults(
     cityEn?: string
     cityZh?: string
     timezone?: string
+    latitude?: number
+    longitude?: number
   }>(),
   {
     cityEn: 'Nanjing',
     cityZh: '南京',
-    timezone: 'Asia/Shanghai'
+    timezone: 'Asia/Shanghai',
+    latitude: 32.0603,
+    longitude: 118.7969
   }
 )
 
 const schemes = palette.weatherSchemes as Record<string, WeatherScheme>
-const weatherData = ref<WttrPayload | null>(null)
+const weatherData = ref<OpenMeteoPayload | null>(null)
 const isLoading = ref(false)
 const errorText = ref('')
-const now = ref(new Date())
 
-let timer: ReturnType<typeof setInterval> | null = null
+let refreshTimer: number | null = null
 
 function normalize(value: string): string {
   return value.trim().toLowerCase()
+}
+
+function clearRefreshTimer() {
+  if (refreshTimer) {
+    clearTimeout(refreshTimer)
+    refreshTimer = null
+  }
+}
+
+function getTimezoneHour(date = new Date()): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: props.timezone,
+    hour: '2-digit',
+    hourCycle: 'h23'
+  }).formatToParts(date)
+  const hourPart = parts.find((part) => part.type === 'hour')?.value
+  const hour = hourPart ? Number(hourPart) : Number.NaN
+  return Number.isFinite(hour) ? hour : date.getHours()
+}
+
+function isNightRefreshTime(date = new Date()): boolean {
+  const hour = getTimezoneHour(date)
+  return hour >= 23 || hour < 8
+}
+
+function getRefreshDelayMs(date = new Date()): number {
+  return isNightRefreshTime(date) ? 30 * 60 * 1000 : 5 * 60 * 1000
+}
+
+function scheduleNextRefresh() {
+  clearRefreshTimer()
+  refreshTimer = window.setTimeout(() => {
+    void refreshWeather()
+  }, getRefreshDelayMs())
+}
+
+function formatTimeOnly(value?: string): string {
+  if (!value) return '--'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '--'
+  return new Intl.DateTimeFormat('zh-CN', {
+    timeZone: props.timezone,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  }).format(date)
+}
+
+function weatherCodeText(code: number | undefined, isDay: number | undefined): string {
+  if (typeof code !== 'number') return '晴'
+  const day = isDay === 0 ? '夜间' : ''
+  if (code === 0) return day ? '晴朗夜间' : '晴'
+  if (code === 1 || code === 2) return '少云'
+  if (code === 3) return '多云'
+  if (code === 45 || code === 48) return '雾'
+  if (code === 51 || code === 53 || code === 55) return '毛毛雨'
+  if (code === 56 || code === 57) return '冻毛毛雨'
+  if (code === 61 || code === 63 || code === 65) return '雨'
+  if (code === 66 || code === 67) return '冻雨'
+  if (code === 71 || code === 73 || code === 75) return '雪'
+  if (code === 77) return '雪粒'
+  if (code === 80 || code === 81 || code === 82) return '阵雨'
+  if (code === 85 || code === 86) return '阵雪'
+  if (code === 95) return '雷暴'
+  if (code === 96 || code === 99) return '雷暴冰雹'
+  return '晴'
 }
 
 function resolveScheme(condition: string): WeatherScheme {
@@ -87,10 +157,18 @@ async function fetchWeather(): Promise<void> {
   isLoading.value = true
   errorText.value = ''
   try {
-    const url = `https://wttr.in/${encodeURIComponent(props.cityEn)}?format=j1&lang=zh`
+    const params = new URLSearchParams({
+      latitude: String(props.latitude),
+      longitude: String(props.longitude),
+      current: 'temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,weather_code,is_day',
+      daily: 'sunrise,sunset',
+      timezone: props.timezone,
+      forecast_days: '1'
+    })
+    const url = `https://api.open-meteo.com/v1/forecast?${params.toString()}`
     const res = await fetch(url, { cache: 'no-store' })
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
-    const data = (await res.json()) as WttrPayload
+    const data = (await res.json()) as OpenMeteoPayload
     weatherData.value = data
   } catch (error) {
     errorText.value = '天气数据获取失败'
@@ -100,13 +178,21 @@ async function fetchWeather(): Promise<void> {
   }
 }
 
-const currentCondition = computed(() => weatherData.value?.current_condition?.[0]?.weatherDesc?.[0]?.value ?? '晴')
-const currentTemp = computed(() => `${weatherData.value?.current_condition?.[0]?.temp_C ?? '--'}°C`)
-const sunrise = computed(() => weatherData.value?.weather?.[0]?.astronomy?.[0]?.sunrise ?? '--')
-const sunset = computed(() => weatherData.value?.weather?.[0]?.astronomy?.[0]?.sunset ?? '--')
-const humidity = computed(() => `${weatherData.value?.current_condition?.[0]?.humidity ?? '--'}%`)
+async function refreshWeather(): Promise<void> {
+  await fetchWeather()
+  scheduleNextRefresh()
+}
+
+const currentCondition = computed(() => weatherCodeText(
+  weatherData.value?.current?.weather_code,
+  weatherData.value?.current?.is_day
+))
+const currentTemp = computed(() => `${weatherData.value?.current?.temperature_2m ?? '--'}°C`)
+const sunrise = computed(() => formatTimeOnly(weatherData.value?.daily?.sunrise?.[0]))
+const sunset = computed(() => formatTimeOnly(weatherData.value?.daily?.sunset?.[0]))
+const humidity = computed(() => `${weatherData.value?.current?.relative_humidity_2m ?? '--'}%`)
 const wind = computed(() => {
-  const speed = weatherData.value?.current_condition?.[0]?.windspeedKmph ?? '--'
+  const speed = weatherData.value?.current?.wind_speed_10m ?? '--'
   return `${speed} km/h`
 })
 
@@ -122,14 +208,11 @@ const themeVars = computed(() => ({
 }))
 
 onMounted(() => {
-  fetchWeather()
-  timer = setInterval(() => {
-    now.value = new Date()
-  }, 30_000)
+  void refreshWeather()
 })
 
 onBeforeUnmount(() => {
-  if (timer) clearInterval(timer)
+  clearRefreshTimer()
 })
 </script>
 
