@@ -30,8 +30,6 @@
             <a class="friend-link" href="https://ebotian-blog.vercel.app/friends" title="友链" aria-label="友链按钮">友链</a>
           </div>
           <div class="skills">
-            <span class="chip">TS</span>
-            <span class="chip">JS</span>
             <span class="chip">VUE</span>
             <span class="chip">TSX</span>
             <span class="chip">MYSQL</span>
