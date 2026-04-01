@@ -192,8 +192,9 @@ const sunrise = computed(() => formatTimeOnly(weatherData.value?.daily?.sunrise?
 const sunset = computed(() => formatTimeOnly(weatherData.value?.daily?.sunset?.[0]))
 const humidity = computed(() => `${weatherData.value?.current?.relative_humidity_2m ?? '--'}%`)
 const wind = computed(() => {
-  const speed = weatherData.value?.current?.wind_speed_10m ?? '--'
-  return `${speed} km/h`
+  const speed = weatherData.value?.current?.wind_speed_10m
+  if (typeof speed !== 'number') return '-- m/s'
+  return `${(speed / 3.6).toFixed(2)}m`
 })
 
 const currentIcon = computed(() => resolveIcon(currentCondition.value))
