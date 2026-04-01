@@ -251,7 +251,6 @@ onBeforeUnmount(() => {
       </div>
 
       <p v-if="errorText" class="status">{{ errorText }}</p>
-      <p v-else-if="isLoading" class="status">正在更新天气…</p>
     </section>
   </article>
 </template>
@@ -348,11 +347,5 @@ onBeforeUnmount(() => {
   height: 0.85rem;
   color: var(--wc-text-accent);
   flex: 0 0 auto;
-}
-
-.status {
-  margin: 0.45rem 0 0;
-  font-size: 0.72rem;
-  color: var(--wc-text-hint);
 }
 </style>
