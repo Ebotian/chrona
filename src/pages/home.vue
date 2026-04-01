@@ -148,7 +148,8 @@ if (latestDatedPost?.date) {
 .etc-container {
   display: flex;
   flex-direction: row;
-  gap: 0.5rem;
+  gap: 0;
   height: 100%;
+  align-items: flex-start;
 }
 </style>

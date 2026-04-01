@@ -186,7 +186,7 @@ const shellStyle = computed(() => {
   width: 100%;
   height: auto;
   min-height: 0;
-  padding: 0.375rem 0.625rem 0.375rem 0;
+  padding: 0.375rem 0.625rem 0.1rem 0;
   box-sizing: border-box;
   overflow: hidden;
 }

@@ -184,7 +184,7 @@ onBeforeUnmount(() => {
   height: auto;
   min-height: 0;
   align-self: flex-start;
-  padding: 0.375rem;
+  padding: 0.375rem 0.625rem 0.1rem 0.325rem;
   box-sizing: border-box;
   color: var(--wc-text-primary);
 }
