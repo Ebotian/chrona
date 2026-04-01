@@ -251,6 +251,10 @@ function onWeekClick(week: HeatWeek) {
   border-radius: 0.12rem;
   background: #d8dde3;
 }
+.week-cell:not(:disabled):hover {
+  opacity: 0.7;
+}
+
 
 .week-cell.lv-1 {
   background: #34a853;
