@@ -21,7 +21,7 @@
           <img class="icon-img" src="https://cdn.jsdelivr.net/npm/feather-icons@4.28.0/dist/icons/music.svg"
             alt="Music" />
         </a>
-        <a class="friend-link" href="#" title="友链" aria-label="友链按钮">友链</a>
+        <a class="friend-link" href="https://ebotian-blog.vercel.app/friends" title="友链" aria-label="友链按钮">友链</a>
       </div>
       <div class="skills">
         <span class="chip">TS</span>
@@ -122,7 +122,7 @@
   display: block;
 }
 
-.icon{
+.icon {
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
