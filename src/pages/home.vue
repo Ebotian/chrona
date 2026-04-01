@@ -7,6 +7,7 @@ import TagRegion from '../components/home/TagRegion.vue'
 import SearchBar from '../components/home/SearchBar.vue'
 import ProfileCard from '../components/home/ProfileCard.vue'
 import MiniPlayer from '../components/home/MiniPlayer.vue'
+import WeatherCard from '../components/home/WeatherCard.vue'
 import { loadPostsFromClient, toTimelineEntries } from '../lib/postClientLoader'
 import { useTimeStore } from '../stores/time'
 
@@ -43,7 +44,10 @@ if (latestDatedPost?.date) {
     <aside class="right">
       <SearchBar />
       <ProfileCard />
-      <MiniPlayer />
+      <div class="etc-container">
+        <WeatherCard />
+        <MiniPlayer />
+      </div>
     </aside>
   </div>
 </template>
@@ -91,7 +95,7 @@ if (latestDatedPost?.date) {
 }
 
 .tag-col {
-  flex:15 1 0;
+  flex: 15 1 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -139,5 +143,12 @@ if (latestDatedPost?.date) {
 .right> :nth-child(3) {
   flex: 1 1 0;
   min-height: 0;
+}
+
+.etc-container {
+  display: flex;
+  flex-direction: row;
+  gap: 0.5rem;
+  height: 100%;
 }
 </style>

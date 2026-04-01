@@ -1,5 +1,5 @@
 <template>
-  <div class="mini-player-shell">
+  <div ref="shellRef" class="mini-player-shell" :style="shellStyle">
     <div class="mini-player">
       <div class="control-bar" role="toolbar">
         <button class="btn area" @click="prev" :disabled="!hasPlaylist" aria-label="prev">
@@ -33,7 +33,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import playlistJson from '../../assets/playlist.json'
 
 const props = defineProps({ playlist: { type: Array, default: () => [] }, startIndex: { type: Number, default: 0 } })
@@ -54,6 +54,9 @@ const currentSrc = computed(() => hasPlaylist.value ? playlist.value[idx.value]?
 
 let audio = null
 const FADE_MS = 300
+const shellRef = ref(null)
+const syncedHeight = ref(0)
+let heightObserver = null
 
 function ensureAudio() {
   if (!audio) {
@@ -146,6 +149,32 @@ function slideTo(newIndex, mode) {
 
 onMounted(() => {
   // do not autoplay; audio will be created lazily on first play
+  const shell = shellRef.value
+  const container = shell?.parentElement
+  const weatherCard = container?.querySelector('.weather-card')
+
+  if (!weatherCard) return
+
+  const applyHeight = () => {
+    const h = weatherCard.getBoundingClientRect().height
+    if (h > 0) syncedHeight.value = Math.round(h)
+  }
+
+  applyHeight()
+  heightObserver = new ResizeObserver(applyHeight)
+  heightObserver.observe(weatherCard)
+})
+
+onBeforeUnmount(() => {
+  if (heightObserver) {
+    heightObserver.disconnect()
+    heightObserver = null
+  }
+})
+
+const shellStyle = computed(() => {
+  if (syncedHeight.value <= 0) return {}
+  return { height: `${syncedHeight.value}px` }
 })
 </script>
 
@@ -155,9 +184,9 @@ onMounted(() => {
   align-items: flex-start;
   justify-content: flex-start;
   width: 100%;
-  height: 100%;
+  height: auto;
   min-height: 0;
-  padding: 0.375rem 0.625rem 0.375rem 0.375rem;
+  padding: 0.375rem 0.625rem 0.375rem 0;
   box-sizing: border-box;
   overflow: hidden;
 }
@@ -186,12 +215,16 @@ onMounted(() => {
 .btn.area {
   flex: 1 1 0;
   border: none;
-  background: transparent;
+  background: #c6e6e8;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   padding: 0;
+}
+
+.btn.area:not(:disabled):hover {
+  opacity: 0.7;
 }
 
 .btn.area:disabled {
@@ -200,7 +233,7 @@ onMounted(() => {
 }
 
 .sep {
-  width: 1px;
+  width: 2px;
   background: #aed9d4;
   height: 100%;
 }
@@ -221,19 +254,14 @@ onMounted(() => {
 .cover-area {
   flex: 1 1 auto;
   min-height: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   background: transparent;
   overflow: hidden;
 }
 
 .covers {
   position: relative;
-  width: auto;
+  width: 100%;
   height: 100%;
-  aspect-ratio: 1 / 1;
-  max-width: 100%;
   overflow: hidden;
 }
 
@@ -242,7 +270,7 @@ onMounted(() => {
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: contain !important;
+  object-fit: cover !important;
   object-position: center;
 }
 

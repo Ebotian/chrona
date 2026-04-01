@@ -28,8 +28,6 @@
         <span class="chip">JS</span>
         <span class="chip">VUE</span>
         <span class="chip">TSX</span>
-        <span class="chip">CSS</span>
-        <span class="chip">HTML</span>
         <span class="chip">MYSQL</span>
         <span class="chip">VHDL</span>
         <span class="chip">VERILOG</span>
