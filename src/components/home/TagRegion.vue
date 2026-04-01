@@ -17,6 +17,15 @@ type RenderCell = {
   meta: string
 }
 
+type TagClickPayload = {
+  articleId: string
+  title: string
+  rect: { left: number; top: number; width: number; height: number }
+  rowRect: { left: number; top: number; width: number; height: number }
+  rowHtml: string
+  rowElement: HTMLElement | null
+}
+
 type RenderRow = {
   key: string
   lineY: number
@@ -37,7 +46,7 @@ const props = withDefaults(defineProps<{
 })
 
 const emit = defineEmits<{
-  (e: 'tagClick', articleId: string): void
+  (e: 'tagClick', payload: TagClickPayload): void
 }>()
 
 const store = useTimeStore()
@@ -246,8 +255,29 @@ const showEmptyMessage = computed(() => {
   return hasTenDayEmptyRun.value && rows.value.length === 0
 })
 
-function onArticleClick(id: string) {
-  emit('tagClick', id)
+function onArticleClick(id: string, title: string, event: MouseEvent) {
+  const target = event.currentTarget as HTMLElement | null
+  const rowElement = target?.closest('.row-band') as HTMLElement | null
+  const rect = target?.getBoundingClientRect()
+  const rowRect = rowElement?.getBoundingClientRect()
+  emit('tagClick', {
+    articleId: id,
+    title,
+    rect: {
+      left: rect?.left ?? 0,
+      top: rect?.top ?? 0,
+      width: rect?.width ?? 0,
+      height: rect?.height ?? 0
+    },
+    rowRect: {
+      left: rowRect?.left ?? 0,
+      top: rowRect?.top ?? 0,
+      width: rowRect?.width ?? 0,
+      height: rowRect?.height ?? 0
+    },
+    rowHtml: rowElement?.outerHTML ?? '',
+    rowElement
+  })
 }
 
 watch(() => store.currentDate, (nextDate) => {
@@ -317,7 +347,8 @@ onUnmounted(() => {
       <span class="row-line row-line-bottom" aria-hidden="true" />
       <div class="row-content" :style="{ gridTemplateColumns: `repeat(${row.columns}, minmax(0, 1fr))` }">
         <button v-for="(cell, idx) in row.cells" :key="cell.id" type="button" class="article-cell"
-          :class="{ 'is-not-first': idx > 0 }" :title="cell.fullTitle" @click="onArticleClick(cell.id)">
+          :class="{ 'is-not-first': idx > 0 }" :title="cell.fullTitle"
+          @click="onArticleClick(cell.id, cell.fullTitle, $event)">
           <span class="cell-main">
             <span class="cell-title">{{ cell.title }}</span>
             <span class="cell-meta">{{ cell.meta }}</span>

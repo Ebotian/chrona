@@ -25,6 +25,7 @@ let dragging = false
 let dragStartY = 0
 let dragStartScrollTop = 0
 let tagRegionEl: HTMLElement | null = null
+let tagRegionObserver: MutationObserver | null = null
 
 function withInternalDateWrite(fn: () => void) {
   internalDateWriteDepth += 1
@@ -276,8 +277,11 @@ function onTagRegionPointerDown(e: PointerEvent) {
 }
 
 function bindTagRegionInteractions() {
-  tagRegionEl = document.querySelector('.tag-region') as HTMLElement | null
-  if (!tagRegionEl) return
+  const target = document.querySelector('.tag-region') as HTMLElement | null
+  if (!target) return
+  if (tagRegionEl === target) return
+  unbindTagRegionInteractions()
+  tagRegionEl = target
   tagRegionEl.addEventListener('wheel', onTagRegionWheel, { passive: false })
   tagRegionEl.addEventListener('pointerdown', onTagRegionPointerDown)
 }
@@ -289,10 +293,25 @@ function unbindTagRegionInteractions() {
   tagRegionEl = null
 }
 
+function startTagRegionObserver() {
+  if (tagRegionObserver) return
+  tagRegionObserver = new MutationObserver(() => {
+    bindTagRegionInteractions()
+  })
+  tagRegionObserver.observe(document.body, { childList: true, subtree: true })
+}
+
+function stopTagRegionObserver() {
+  if (!tagRegionObserver) return
+  tagRegionObserver.disconnect()
+  tagRegionObserver = null
+}
+
 onMounted(async () => {
   window.addEventListener('keydown', onKey)
   await nextTick()
   bindTagRegionInteractions()
+  startTagRegionObserver()
   await jumpToDateInstant(getCurrentDate())
   publishSnapshot()
 })
@@ -302,6 +321,7 @@ onUnmounted(() => {
   window.removeEventListener('pointermove', onPointerMove)
   window.removeEventListener('pointerup', onPointerUp)
   unbindTagRegionInteractions()
+  stopTagRegionObserver()
   if (container.value) gsap.killTweensOf(container.value, 'scrollTop')
 })
 

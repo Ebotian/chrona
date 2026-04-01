@@ -7,6 +7,10 @@ export type SearchablePost = ArticleMeta & {
   searchText: string
 }
 
+export type PostDetail = ArticleMeta & {
+  body: string
+}
+
 function parseFrontmatter(content: string): Record<string, string> {
   const fm: Record<string, string> = {}
   if (!content.startsWith('---')) return fm
@@ -28,10 +32,17 @@ function parseFrontmatter(content: string): Record<string, string> {
 function filenameToSlug(file: string): string {
   const base = file.split('/').pop()?.replace(/\.[^.]+$/, '') ?? file
   const stripped = base.replace(/^[0-9]{4}([-.][0-9]{1,2}){2}[-_]?/, '')
-  return stripped
+  const normalized = stripped
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
+  if (normalized) return normalized
+  const seed = stripped || base || file
+  let hash = 0
+  for (let i = 0; i < seed.length; i++) {
+    hash = (hash * 31 + seed.charCodeAt(i)) >>> 0
+  }
+  return `post-${hash.toString(16)}`
 }
 
 function filenameDate(file: string): string | undefined {
@@ -140,4 +151,30 @@ export function toTimelineEntries(posts: ArticleMeta[]): Record<string, ArticleM
     if (entries[day].length < 2) entries[day].push(post)
   }
   return entries
+}
+
+export function loadPostBySlugFromClient(slug: string): PostDetail | null {
+  const modules = import.meta.glob('/posts/**/*.md', {
+    query: '?raw',
+    import: 'default',
+    eager: true
+  }) as RawModules
+
+  for (const [filePath, raw] of Object.entries(modules)) {
+    const fm = parseFrontmatter(raw)
+    const postSlug = fm.slug || filenameToSlug(filePath)
+    if (postSlug !== slug) continue
+    const rawName = filePath.split('/').pop()?.replace(/\.[^.]+$/, '') ?? filePath
+    const title = rawName.replace(/^[0-9]{4}([-.][0-9]{1,2}){2}[-_]?/, '')
+    const date = fm.date || filenameDate(filePath)
+    return {
+      id: postSlug,
+      title,
+      date: date ? normalizeDate(date) : undefined,
+      slug: postSlug,
+      filePath: filePath.slice(1),
+      body: stripFrontmatter(raw)
+    }
+  }
+  return null
 }
