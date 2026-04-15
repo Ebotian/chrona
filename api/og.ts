@@ -1,28 +1,104 @@
-/**
- * 简单的 OG 图像生成 API
- * 返回一张带文标题和日期的 PNG 图像，用于社交分享卡片
- * 使用现成的在线服务如 og-image 或返回占位图
- */
+import { ImageResponse } from '@vercel/og'
 
-export default async function handler(req: any, res: any) {
-  const { title = "Nicolette的blog", date = "" } = req.query;
+export const config = {
+  runtime: 'edge'
+}
 
-  // 使用免费的 OG 图像生成服务（placeholder.com 或自建）
-  // 这里返回一个简单的红色占位图，展示标题
+const SITE_TITLE = 'Nicolette的blog'
+const SITE_URL = 'https://nicoletteblog.vercel.app'
+const DEFAULT_DESCRIPTION = '什么都写的博客'
 
-  const encodedTitle = encodeURIComponent(title);
-  const encodedDate = encodeURIComponent(date);
+function clampText(value: string, maxLength: number): string {
+  const text = value.trim()
+  if (!text) return ''
+  if (text.length <= maxLength) return text
+  return `${text.slice(0, maxLength).trimEnd()}…`
+}
 
-  // 方案 1：使用 Vercel 的官方 OG 图像库（需要 @vercel/og）
-  // 方案 2：使用外部服务 og-image.vercel.app
+export default async function handler(req: Request) {
+  const url = new URL(req.url)
+  const title = clampText(url.searchParams.get('title') ?? SITE_TITLE, 48) || SITE_TITLE
+  const summary = clampText(url.searchParams.get('summary') ?? DEFAULT_DESCRIPTION, 100) || DEFAULT_DESCRIPTION
+  const site = url.searchParams.get('site')?.trim() || SITE_URL
+  const favicon = url.searchParams.get('favicon')?.trim() || `${SITE_URL}/favicon.ico`
 
-  const ogImageUrl = `https://og-image.vercel.app/${encodedTitle}.png?theme=dark&md=0&fontSize=100px&images=https%3A%2F%2Fnicolletteblog.vercel.app%2Ffavicon.ico`;
+  return new ImageResponse(
+    (
+      <div
+        style={{
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          background: '#FFF8E1',
+          color: '#23324d',
+          padding: '64px 72px',
+          boxSizing: 'border-box',
+          overflow: 'hidden',
+          fontFamily: 'sans-serif',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
+          <img
+            src={favicon}
+            alt="favicon"
+            width={48}
+            height={48}
+            style={{ width: '48px', height: '48px', objectFit: 'contain' }}
+          />
+          <span style={{ fontSize: '28px', fontWeight: 700, lineHeight: 1, letterSpacing: '-0.02em' }}>
+            {SITE_TITLE}
+          </span>
+        </div>
 
-  res.setHeader("Content-Type", "image/png");
-  res.setHeader("Cache-Control", "public, max-age=86400");
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '1050px' }}>
+          <div
+            style={{
+              fontSize: '66px',
+              fontWeight: 700,
+              lineHeight: 1.08,
+              letterSpacing: '-0.03em',
+              display: 'flex',
+              flexWrap: 'wrap',
+            }}
+          >
+            {title}
+          </div>
 
-  // 重定向到外部 OG 图像生成服务
-  // 或者如果使用 @vercel/og，在这里生成图像
+          <div
+            style={{
+              fontSize: '34px',
+              fontWeight: 500,
+              lineHeight: 1.45,
+              opacity: 0.92,
+              display: 'flex',
+              flexWrap: 'wrap',
+            }}
+          >
+            {summary}
+          </div>
+        </div>
 
-  res.redirect(ogImageUrl);
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <span
+            style={{
+              width: '12px',
+              height: '12px',
+              borderRadius: '999px',
+              background: '#23324d',
+              display: 'flex',
+            }}
+          />
+          <span style={{ fontSize: '28px', fontWeight: 600, lineHeight: 1 }}>
+            {site}
+          </span>
+        </div>
+      </div>
+    ),
+    {
+      width: 1200,
+      height: 630,
+    },
+  )
 }

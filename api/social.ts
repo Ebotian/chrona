@@ -1,36 +1,12 @@
 import fs from "fs";
 import path from "path";
 
-const BOT_AGENTS = [
-  "facebookexternalhit",
-  "twitterbot",
-  "linkedinbot",
-  "whatsapp",
-  "telegrambot",
-  "viber",
-  "googlebot",
-  "bingbot",
-  "yandexbot",
-  "baiduspider",
-  "duckduckbot",
-  "slurp",
-  "yisoubot",
-  "bytespider",
-  "wechatbot",
-  "bot|crawler|spider|scraper",
-];
-
 type PostData = {
   title: string;
   slug: string;
   body: string;
   date?: string;
 };
-
-function isBotRequest(userAgent: string): boolean {
-  const ua = (userAgent || "").toLowerCase();
-  return BOT_AGENTS.some((bot) => ua.includes(bot));
-}
 
 function loadPost(slug: string): PostData | null {
   try {
@@ -105,10 +81,13 @@ function escapeHtml(str: string): string {
     .replace(/'/g, "&#39;");
 }
 
+/**
+ * 返回预渲染的 HTML for 爬虫，内含正确的 meta 标签
+ * 用户点击时自动重定向到真实的 SPA 应用
+ */
 export default function handler(req: any, res: any) {
   const { slug } = req.query;
 
-  // 爬虫：返回预渲染的 HTML with 正确的 meta 标签
   if (!slug || typeof slug !== "string") {
     return res.status(404).json({ error: "Not found" });
   }
@@ -123,8 +102,10 @@ export default function handler(req: any, res: any) {
     extractSummary(post.body, 160) || "什么都写的博客",
   );
   const title = escapeHtml(post.title);
-  const imageSummary = extractSummary(post.body, 100) || "什么都写的博客";
-  const imageUrl = `https://nicoletteblog.vercel.app/api/og?title=${encodeURIComponent(post.title)}&summary=${encodeURIComponent(imageSummary)}&site=${encodeURIComponent("https://nicoletteblog.vercel.app")}&favicon=${encodeURIComponent("https://nicoletteblog.vercel.app/favicon.ico")}`;
+  const imageUrl = `https://nicoletteblog.vercel.app/api/og?title=${encodeURIComponent(
+    post.title,
+  )}&date=${post.date || ""}`;
+  const canonicalUrl = `https://nicoletteblog.vercel.app/article/${slug}`;
 
   const html = `<!DOCTYPE html>
 <html lang="zh-CN">
@@ -136,7 +117,7 @@ export default function handler(req: any, res: any) {
   <meta property="og:type" content="article" />
   <meta property="og:title" content="${title} - Nicolette的blog" />
   <meta property="og:description" content="${description}" />
-  <meta property="og:url" content="https://nicoletteblog.vercel.app/article/${slug}" />
+  <meta property="og:url" content="${canonicalUrl}" />
   <meta property="og:image" content="${imageUrl}" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
@@ -147,10 +128,18 @@ export default function handler(req: any, res: any) {
   <meta name="twitter:description" content="${description}" />
   <meta name="twitter:image" content="${imageUrl}" />
   
-  <meta http-equiv="refresh" content="0;url=https://nicoletteblog.vercel.app/article/${slug}">
+  <!-- Canonical 标签指向原始 URL -->
+  <link rel="canonical" href="${canonicalUrl}" />
+  
+  <!-- 浏览器重定向到真实 SPA 应用 (延迟 2 秒给爬虫时间读取 meta) -->
+  <meta http-equiv="refresh" content="2;url=${canonicalUrl}">
+  <script>
+    // 即时重定向（如果支持 JS）
+    window.location.href = "${canonicalUrl}";
+  </script>
 </head>
 <body>
-  Loading...
+  <p><a href="${canonicalUrl}">进入博客</a></p>
 </body>
 </html>`;
 

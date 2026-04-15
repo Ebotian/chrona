@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { useRoute } from "vue-router";
 import MarkdownIt from "markdown-it";
 import markdownItKatex from "markdown-it-katex";
 import hljs from "highlight.js";
@@ -10,7 +10,6 @@ import "github-markdown-css/github-markdown-light.css";
 import "katex/dist/katex.min.css";
 
 const route = useRoute();
-const router = useRouter();
 const props = withDefaults(
   defineProps<{
     slug?: string;
@@ -27,9 +26,6 @@ const props = withDefaults(
     contentOffset: 0,
   },
 );
-const emit = defineEmits<{
-  (e: "close"): void;
-}>();
 const contentVisible = ref(false);
 
 function escapeHtml(input: string): string {
@@ -70,14 +66,6 @@ const renderedHtml = computed(() => {
   return md.render(post.value.body);
 });
 
-function backHome() {
-  if (props.embedded) {
-    emit("close");
-    return;
-  }
-  router.push({ name: "home" });
-}
-
 async function animateIn() {
   contentVisible.value = false;
   await nextTick();
@@ -98,12 +86,13 @@ function updateSEO() {
   const baseUrl = "https://nicoletteblog.vercel.app";
   const postUrl = `${baseUrl}/article/${post.value.slug}`;
   const summary = extractSummary(post.value.body, 160);
+  const imageSummary = extractSummary(post.value.body, 100) || "什么都写的博客";
 
   updatePageSEO({
     title: `${post.value.title} - Nicolette的blog`,
     description: summary || "什么都写的博客",
     url: postUrl,
-    image: `${baseUrl}/favicon.ico`,
+    image: `${baseUrl}/api/og?title=${encodeURIComponent(post.value.title)}&summary=${encodeURIComponent(imageSummary)}&site=${encodeURIComponent(baseUrl)}&favicon=${encodeURIComponent(`${baseUrl}/favicon.ico`)}`,
     type: "article",
   });
 }
@@ -121,10 +110,6 @@ onMounted(() => {
 
 <template>
   <main class="detail-page" :class="{ embedded: props.embedded }">
-    <div v-if="props.showHeader" class="detail-topbar">
-      <button class="back-btn" type="button" @click="backHome">返回</button>
-    </div>
-
     <section
       v-if="post"
       class="detail-content-wrap"
@@ -191,26 +176,6 @@ onMounted(() => {
   padding: 0 0.45rem 0 0;
   height: 100%;
   overflow: auto;
-}
-
-.detail-topbar {
-  margin-bottom: 0.85rem;
-}
-
-.back-btn {
-  border: 1px solid #ef475d;
-  color: #ef475d;
-  background: transparent;
-  border-radius: 10px;
-  padding: 0.35rem 0.8rem;
-  font-size: 0.9rem;
-  line-height: 1.2;
-  cursor: pointer;
-  transition: background-color 180ms ease;
-}
-
-.back-btn:hover {
-  background: #ffa0ac;
 }
 
 .detail-content-wrap {
