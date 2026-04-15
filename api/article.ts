@@ -1,36 +1,12 @@
 import fs from "fs";
 import path from "path";
 
-const BOT_AGENTS = [
-  "facebookexternalhit",
-  "twitterbot",
-  "linkedinbot",
-  "whatsapp",
-  "telegrambot",
-  "viber",
-  "googlebot",
-  "bingbot",
-  "yandexbot",
-  "baiduspider",
-  "duckduckbot",
-  "slurp",
-  "yisoubot",
-  "bytespider",
-  "wechatbot",
-  "bot|crawler|spider|scraper",
-];
-
 type PostData = {
   title: string;
   slug: string;
   body: string;
   date?: string;
 };
-
-function isBotRequest(userAgent: string): boolean {
-  const ua = (userAgent || "").toLowerCase();
-  return BOT_AGENTS.some((bot) => ua.includes(bot));
-}
 
 function loadPost(slug: string): PostData | null {
   try {
