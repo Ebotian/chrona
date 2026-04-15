@@ -1,40 +1,44 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import MarkdownIt from 'markdown-it'
-import markdownItKatex from 'markdown-it-katex'
-import hljs from 'highlight.js'
-import { loadPostBySlugFromClient } from '../lib/postClientLoader'
-import 'github-markdown-css/github-markdown-light.css'
-import 'katex/dist/katex.min.css'
+import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import MarkdownIt from "markdown-it";
+import markdownItKatex from "markdown-it-katex";
+import hljs from "highlight.js";
+import { loadPostBySlugFromClient } from "../lib/postClientLoader";
+import { updatePageSEO, resetPageSEO, extractSummary } from "../lib/seoHelper";
+import "github-markdown-css/github-markdown-light.css";
+import "katex/dist/katex.min.css";
 
-const route = useRoute()
-const router = useRouter()
-const props = withDefaults(defineProps<{
-  slug?: string
-  embedded?: boolean
-  showHeader?: boolean
-  showTitle?: boolean
-  contentOffset?: number
-}>(), {
-  slug: '',
-  embedded: false,
-  showHeader: true,
-  showTitle: true,
-  contentOffset: 0
-})
+const route = useRoute();
+const router = useRouter();
+const props = withDefaults(
+  defineProps<{
+    slug?: string;
+    embedded?: boolean;
+    showHeader?: boolean;
+    showTitle?: boolean;
+    contentOffset?: number;
+  }>(),
+  {
+    slug: "",
+    embedded: false,
+    showHeader: true,
+    showTitle: true,
+    contentOffset: 0,
+  },
+);
 const emit = defineEmits<{
-  (e: 'close'): void
-}>()
-const contentVisible = ref(false)
+  (e: "close"): void;
+}>();
+const contentVisible = ref(false);
 
 function escapeHtml(input: string): string {
   return input
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;')
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
 }
 
 const md: MarkdownIt = new MarkdownIt({
@@ -43,49 +47,76 @@ const md: MarkdownIt = new MarkdownIt({
   typographer: true,
   highlight(str: string, lang: string): string {
     if (lang && hljs.getLanguage(lang)) {
-      const code: string = hljs.highlight(str, { language: lang, ignoreIllegals: true }).value
-      return `<pre class="hljs"><code>${code}</code></pre>`
+      const code: string = hljs.highlight(str, {
+        language: lang,
+        ignoreIllegals: true,
+      }).value;
+      return `<pre class="hljs"><code>${code}</code></pre>`;
     }
-    const code: string = escapeHtml(str)
-    return `<pre class="hljs"><code>${code}</code></pre>`
-  }
-})
-md.use(markdownItKatex)
+    const code: string = escapeHtml(str);
+    return `<pre class="hljs"><code>${code}</code></pre>`;
+  },
+});
+md.use(markdownItKatex);
 
 const slug = computed(() => {
-  const fromProps = props.slug.trim()
-  if (fromProps) return fromProps
-  return String(route.params.slug ?? '')
-})
-const post = computed(() => loadPostBySlugFromClient(slug.value))
+  const fromProps = props.slug.trim();
+  if (fromProps) return fromProps;
+  return String(route.params.slug ?? "");
+});
+const post = computed(() => loadPostBySlugFromClient(slug.value));
 const renderedHtml = computed(() => {
-  if (!post.value) return ''
-  return md.render(post.value.body)
-})
+  if (!post.value) return "";
+  return md.render(post.value.body);
+});
 
 function backHome() {
   if (props.embedded) {
-    emit('close')
-    return
+    emit("close");
+    return;
   }
-  router.push({ name: 'home' })
+  router.push({ name: "home" });
 }
 
 async function animateIn() {
-  contentVisible.value = false
-  await nextTick()
-  window.setTimeout(() => {
-    contentVisible.value = true
-  }, props.embedded ? 20 : 30)
+  contentVisible.value = false;
+  await nextTick();
+  window.setTimeout(
+    () => {
+      contentVisible.value = true;
+    },
+    props.embedded ? 20 : 30,
+  );
+}
+
+function updateSEO() {
+  if (!post.value) {
+    resetPageSEO();
+    return;
+  }
+
+  const baseUrl = "https://nicoletteblog.vercel.app";
+  const postUrl = `${baseUrl}/article/${post.value.slug}`;
+  const summary = extractSummary(post.value.body, 160);
+
+  updatePageSEO({
+    title: `${post.value.title} - Nicolette的blog`,
+    description: summary || "什么都写的博客",
+    url: postUrl,
+    image: `${baseUrl}/favicon.ico`,
+    type: "article",
+  });
 }
 
 watch(slug, () => {
-  animateIn()
-})
+  animateIn();
+  updateSEO();
+});
 
 onMounted(() => {
-  animateIn()
-})
+  animateIn();
+  updateSEO();
+});
 </script>
 
 <template>
@@ -94,10 +125,19 @@ onMounted(() => {
       <button class="back-btn" type="button" @click="backHome">返回</button>
     </div>
 
-    <section v-if="post" class="detail-content-wrap" :style="{ paddingTop: `${props.contentOffset}px` }">
+    <section
+      v-if="post"
+      class="detail-content-wrap"
+      :class="{ embedded: props.embedded }"
+      :style="{ paddingTop: `${props.contentOffset}px` }"
+    >
       <h1 v-if="props.showTitle" class="detail-title">{{ post.title }}</h1>
 
-      <article class="detail-article markdown-body" :class="{ visible: contentVisible }" v-html="renderedHtml" />
+      <article
+        class="detail-article markdown-body"
+        :class="{ visible: contentVisible }"
+        v-html="renderedHtml"
+      />
 
       <div class="article-end" />
     </section>
@@ -182,6 +222,12 @@ onMounted(() => {
   width: min(100%, 980px);
 }
 
+.detail-content-wrap.embedded {
+  width: 100%;
+  max-width: none;
+  align-items: stretch;
+}
+
 .detail-title {
   margin: 0;
   font-size: 1.5rem;
@@ -228,7 +274,7 @@ onMounted(() => {
 
 :deep(.markdown-body pre),
 :deep(.markdown-body code) {
-  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  font-family: "JetBrains Mono", "Fira Code", "Consolas", monospace;
 }
 
 :deep(.markdown-body .hljs) {
